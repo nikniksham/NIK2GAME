@@ -1,0 +1,5 @@
+a = input().split()
+b, c = int(a[0]), int(a[1])
+d = input().split()
+e, f = int(d[0]), int(d[1])
+print(b + c + e + f)
