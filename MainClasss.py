@@ -573,12 +573,18 @@ class Bullet(Item):
         # возвращает тип снаряда
         return self.type_bullet
 
-    def bullet_move(self):
+    def bullet_move(self, mask_sprites, person_sprites, weapon):
         self.coord[0] += self.x_vel
         self.coord[1] += self.y_vel
         self.rect.x, self.rect.y = self.coord
-        if get_gipotinuza(self.coord, self.start_pos) >= self.attack_radius:
+        if get_gipotinuza(self.coord, self.start_pos) >= self.attack_radius or \
+                pygame.sprite.spritecollide(self, mask_sprites, False, False):
             return True
+        for elem in person_sprites:
+            if elem.get_rect().colliderect(self.rect):
+                if elem.is_type('NPS'):
+                    weapon.damage(elem)
+                    return True
         return False
 
 
@@ -610,62 +616,32 @@ class Weapon(Bullet):
         mouse_y -= 10
         coord = hero.get_coord()
         sin, cos = hero.weapon.flight_path([mouse_x, mouse_y], coord_person)
-        x_vel, y_vel = 5 * cos, 5 * sin
+        x_vel, y_vel = 10 * cos, 10 * sin
         # print(self.bullet, 'пуля')
         bullet.add_object(Bullet(image, [coord[0] + 5, coord[1] + 10], 'bullet', 10, 'standard', x_vel, y_vel, self.attack_radius))
 
-    def bullets_move(self, bullets):
+    def bullets_move(self, bullets, level, screen, weapon):
+        person_sprites = []
+        mask_sprites = pygame.sprite.Group()
+        for elem in level.get_object():
+            if not elem.get_is_bg():
+                person_sprites.append(elem)
+        for elem in level.get_main_chunks(screen):
+            if str(type(elem)) != '<class \'Chunk.ChunkImage\'>':
+                Tile(elem.get_rect(), mask_sprites)
         for bullet in bullets.get_object():
-            if bullet.bullet_move():
+            if bullet.bullet_move(mask_sprites, person_sprites, weapon):
                 bullets.remove(bullet)
 
     def get_bullet_count(self):
         # идём в инвентарь берём патроны и возвращаем количество патронов нужного типа
+        # if enemy.is_type('MovingObject'):
         pass
 
     def damage(self, enemy):
-        global message
-        # Вроде сделал, и всё понятно, глянь комменты, если что-то не понятно (если что-то не понял до сих пор,
-        # то напиши в лс, или позвони)
-        # урон, броня равныы нулю
-        damage, armor_damage = 0, 0
-        # проверяем ТО ЧТО ЕСЛИ мы нанесём урон игра не крашнется!!
-        if enemy.is_type('MovingObject'):
-            # проверяем радиус стрельбы через гипотинузу двух катетов
-            if get_gipotinuza(self.owner.get_coord(), enemy.get_coord()) <= self.attack_radius:
-                # вычисляем урон (в радиусе от минимального урона до максимального)
-                damage = random.choice(range(self.range_damage[0], self.range_damage[1] + 1))
-                # проверяем то что у врага есть юроня
-                if enemy.get_armor() is not None:
-                    # Проверка на то, что броня не полность сломана
-                    if enemy.get_armor_hp() > 0:
-                        # Проверка на то, что урон больше защиты
-                        if damage > enemy.get_armor():
-                            # нанесение урона
-                            enemy.damage(int(damage - enemy.get_armor()))
-                            # если кол-во хп ниже 0, то присваивается 0
-                            if enemy.get_hp() < 0:
-                                enemy.set_hp(0)
-                            # вычисляем урон нанесёный от брони
-                            armor_damage = damage / 10
-                            # наносим урон дране
-                            enemy.armor_damage(armor_damage)
-                            # если броня сломана выводим сообщение
-                            if enemy.get_armor_hp() <= 0:
-                                print(f'Броня {enemy.get_name()} сломалась')
-                else:
-                    # наносим полный урон
-                    enemy.damage(int(damage))
-            # уведомлания для отладки
-            if message:
-                print(f'{self.owner.get_name} нанёс {enemy.get_name} {damage} урона, теперь его здоровье равно '
-                      f'{enemy.get_hp}')
-                if enemy.get_armor_hp > 0:
-                    print(f'Броня поломалась на {armor_damage}, теперь её здоровье равно {enemy.get_armor_hp}')
-        # если у объекта не может быть брани в приципе то наносим просто урон
-        elif enemy.is_type('HealPointObject'):
-            # наносим полный урон
-            enemy.damage(int(damage))
+        damage = random.choice(range(self.range_damage[0], self.range_damage[1]))
+        # print('Нанесенно', damage, 'урона')
+        enemy.damage(damage, enemy)
 
     def flight_path(self, mouse_pos, hero_pos):
         x, y = hero_pos
@@ -678,6 +654,12 @@ class Weapon(Bullet):
     def get_accuracy(self):
         # возвращает точность оружия (десятичное число, самая лучшая точность ---> 1.0)
         return self.accuracy
+
+
+class Tile(pygame.sprite.Sprite):
+    def __init__(self, rect, mask_sprites):
+        super().__init__(mask_sprites)
+        self.rect = rect
 
 
 class HealPointObject(Object):
@@ -698,12 +680,15 @@ class HealPointObject(Object):
     def get_max_hp(self):
         return self.max_heal_point
 
-    def damage(self, damage):
+    def damage(self, damage, enemy=None):
         # наносит урон игроку (уменьшает запас хп)
         if damage > self.heal_point:
             self.heal_point = 0
+            if enemy is not None:
+                enemy.die()
         else:
             self.heal_point -= damage
+        # print('Осталось', self.heal_point, 'hp')
 
     def heal(self, heal_point):
         # восстанавливает количесто хп, но не больше max_heal_point
@@ -773,7 +758,10 @@ class MovingObject(HealPointObject):
         self.food = n
 
     def hunger(self, n):
-        self.food -= n
+        if self.food <= n:
+            self.food = 0
+        else:
+            self.food -= n
 
     def get_armor(self):
         # получить броню объекта может быть None
@@ -830,7 +818,7 @@ class MovingObject(HealPointObject):
 class AnimationObject(MovingObject):
     def __init__(self, images, coord, hp, max_heal_point, food, max_food_point, frames_forward, frames_back,
                  frames_left,
-                 frames_right, size=None, armor=None):
+                 frames_right, NPS=None, size=None, armor=None):
         self.die_f = False
         super().__init__(images, coord, hp, max_heal_point, armor, food, max_food_point, size)
         self.add_type('AnimationObject')
@@ -857,22 +845,26 @@ class AnimationObject(MovingObject):
         self.speed_boost = False
         # downloading sprites
         # изображения ходьбы вверх
+        way = 'sprite/person_sprites/'
+        if NPS is not None:
+            way = 'sprite/NPS_sprites/'
         for frame in frames_forward:
-            self.frames_forward.append(Image('sprite/person_sprites/' + frame))
+            self.frames_forward.append(Image(way + frame))
         # изображения ходьбы вниз
         for frame in frames_back:
-            self.frames_back.append(Image('sprite/person_sprites/' + frame))
+            self.frames_back.append(Image(way + frame))
         # изобрадения ходьбы влево
         for frame in frames_left:
-            self.frames_left.append(Image('sprite/person_sprites/' + frame))
+            self.frames_left.append(Image(way + frame))
         # избражения ходьбы вправо
         for frame in frames_right:
-            self.frames_right.append(Image('sprite/person_sprites/' + frame))
+            self.frames_right.append(Image(way + frame))
 
-    def die(self, filename, die_frames):
+    def die(self, filename=None, die_frames=None):
         self.die_f = True
-        for elem in die_frames[0]:
-            self.die_frames.append(Object(filename + elem, (120, 120)))
+        if die_frames is not None:
+            for elem in die_frames[0]:
+                self.die_frames.append(Object(filename + elem, (120, 120)))
 
     def draw(self):
         # если не столкнулись справа и ускарение направлено вправо
@@ -929,7 +921,7 @@ class AnimationObject(MovingObject):
 
     def next_die_frame(self):
         self.count_die_frames += 1
-        if self.count_die_frames > 8 and self.die_frame < 9:
+        if self.count_die_frames > 20 and self.die_frame < 9:
             self.count_die_frames = 0
             self.die_frame += 1
 
@@ -949,10 +941,10 @@ class AnimationObject(MovingObject):
 
 class Person(AnimationObject):
     def __init__(self, image, coord, hp, max_heal_point, food, max_food_point, name, frames_forward, frames_back,
-                 frames_left, frames_right, size=None, armor=None):
+                 frames_left, frames_right, NPS=None, size=None, armor=None):
         # тип объекта: Person
         super().__init__(image, coord, hp, max_heal_point, food, max_food_point, frames_forward, frames_back,
-                         frames_left, frames_right, size)
+                         frames_left, frames_right, NPS, size)
         self.add_type('Person')
         self.name = name
         # имя персонажа

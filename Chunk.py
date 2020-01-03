@@ -8,7 +8,7 @@ class ChunkImage(Surface, Sprite):
         self.image = surf
         self.coord = coord
         self.layer = 0
-        self.is_back_ground = False
+        self.is_back_ground = True
 
     def set_bg(self, val: bool):
         self.is_back_ground = bool(val)

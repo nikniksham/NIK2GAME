@@ -120,21 +120,44 @@ scene = Level('sprite/blocks_sprites/block_1.bmp', 'first_scene',
 scene.add_main_chunk(bg_group)
 # добавляем чанк переднего плана
 scene.add_main_chunk(walls_group)
-# добавляем главного героя
 scene.add_object(hero)
+Desert_eagle = WeaponObj('sprite/Weapon_sprites/Desert Eagle.bmp', (360, 360), 'DesertEagle', 1, 'simple', 'simple',
+                         2000, [10, 20], 200, 1, None, shoot_image, screen=screen, aim=hero)
+scene.add_object(Desert_eagle)
+# добавляем главного героя
 # устанавливаем главного героя главным героем
 scene.set_main_hero(hero)
+healpoint_NPS = Image('sprite/NPS_sprites/healpoint_nps.bmp')
 bullets = Group('sprite/bullets/standard_bullet.bmp')
 scene.add_group(bullets)
 resurrection = ImageButton('sprite/User_Interface/resurrection.bmp', (size_screen[0] // 2 - 100, size_screen[1] // 2 - 100))
-NPS = WithSomeone('sprite/NPS_sprites/hog.bmp', (100, 100), top, back,
-                  forward_left, forward_right)
+NPS = WithSomeone('sprite/NPS_sprites/hog.bmp', (100, 100), ['hog.bmp'], ['hog.bmp'], ['hog.bmp'], ['hog.bmp'], hp=100)
+soldier_forward = ['NPS_soldier_1_forward_1.bmp', 'NPS_soldier_1_forward_2.bmp', 'NPS_soldier_1_forward_3.bmp',
+                   'NPS_soldier_1_forward_4.bmp', 'NPS_soldier_1_forward_5.bmp', 'NPS_soldier_1_forward_6.bmp',
+                   'NPS_soldier_1_forward_7.bmp', 'NPS_soldier_1_forward_8.bmp', 'NPS_soldier_1_forward_9.bmp',
+                   'NPS_soldier_1_forward_10.bmp', 'NPS_soldier_1_forward_11.bmp', 'NPS_soldier_1_forward_12.bmp',
+                   'NPS_soldier_1_forward_13.bmp']
+soldier_back = ['NPS_soldier_1_back_1.bmp', 'NPS_soldier_1_back_2.bmp', 'NPS_soldier_1_back_3.bmp',
+                'NPS_soldier_1_back_4.bmp', 'NPS_soldier_1_back_5.bmp', 'NPS_soldier_1_back_6.bmp',
+                'NPS_soldier_1_back_7.bmp', 'NPS_soldier_1_back_8.bmp', 'NPS_soldier_1_back_9.bmp',
+                'NPS_soldier_1_back_10.bmp', 'NPS_soldier_1_back_11.bmp', 'NPS_soldier_1_back_12.bmp',
+                'NPS_soldier_1_back_13.bmp']
+soldier_left = ['NPS_soldier_1_left_1.bmp', 'NPS_soldier_1_left_2.bmp', 'NPS_soldier_1_left_3.bmp',
+                'NPS_soldier_1_left_4.bmp', 'NPS_soldier_1_left_5.bmp', 'NPS_soldier_1_left_6.bmp',
+                'NPS_soldier_1_left_7.bmp', 'NPS_soldier_1_left_8.bmp', 'NPS_soldier_1_left_9.bmp',
+                'NPS_soldier_1_left_10.bmp', 'NPS_soldier_1_left_11.bmp', 'NPS_soldier_1_left_12.bmp',
+                'NPS_soldier_1_left_13.bmp']
+soldier_right = ['NPS_soldier_1_right_1.bmp', 'NPS_soldier_1_right_2.bmp', 'NPS_soldier_1_right_3.bmp',
+                 'NPS_soldier_1_right_4.bmp', 'NPS_soldier_1_right_5.bmp', 'NPS_soldier_1_right_6.bmp',
+                 'NPS_soldier_1_right_7.bmp', 'NPS_soldier_1_right_8.bmp', 'NPS_soldier_1_right_9.bmp',
+                 'NPS_soldier_1_right_10.bmp', 'NPS_soldier_1_right_11.bmp', 'NPS_soldier_1_right_12.bmp',
+                 'NPS_soldier_1_right_13.bmp']
+soldier = WithSomeone('sprite/NPS_sprites/NPS_soldier_1_forward_1.bmp', [200, 200], soldier_forward, soldier_back,
+                      soldier_left, soldier_right, hp=200, name='Soldier')
+scene.add_object(soldier)
 scene.add_group(enemy_group)
 scene.add_object(NPS)
 heal_point = Image('sprite/User_Interface/heal_point.bmp')
-Desert_eagle = WeaponObj('sprite/Weapon_sprites/Desert Eagle.bmp', (360, 360), 'DesertEagle', 1, 'simple', 'simple',
-                         2000, (10, 100), 200, 1, None, shoot_image, screen=screen, aim=hero)
-scene.add_object(Desert_eagle)
 # цикл работает
 run = True
 coord = [(int(size_screen[0] - 500), int(size_screen[1] - 160)), (int(size_screen[0] - 790), int(size_screen[1] - 160))]
@@ -148,7 +171,7 @@ def print_text(message, x, y, font_style='arial.ttf', font_size=30, font_color=(
 
 
 # в какую сторону он движется
-f = left = right = up = down = shift = False
+shoot_f = f = left = right = up = down = shift = False
 while run:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -189,9 +212,14 @@ while run:
                     f = True
                 camera.create()
         if event.type == pygame.MOUSEBUTTONDOWN and hero.weapon is not None:
-            if event.button == 1:
+            if event.button == 1 and not shoot_f:
+                shoot_f = True
                 hero.weapon.spawn_bullet(camera, hero, 'sprite/bullets/standard_bullet.bmp', bullets)
-    hero.weapon.bullets_move(bullets)
+    if shoot_f:
+        Desert_eagle.shoot()
+        if Desert_eagle.stop_shoot():
+            shoot_f = False
+    hero.weapon.bullets_move(bullets, scene, camera, hero.weapon)
     # обнавляем главного героя (двигаем и анимируем)
     camera.draw(scene)
     hero.update(left, right, up, down, walls_group, enemy_group, shift)
@@ -202,6 +230,10 @@ while run:
     if hero.get_die():
         resurrection.draw(hero.resurrection, screen)
     NPS.update(hero, walls_group)
+    soldier.update(hero, walls_group)
+    NPS.draw_heal_point(camera, screen, healpoint_NPS)
+    soldier.draw_heal_point(camera, screen, healpoint_NPS)
+    Desert_eagle.set_coord([hero.get_coord()[0] + 5, hero.get_coord()[1] + 8])
     print_text(str(int(camera.clock.get_fps())), size_screen[0] - 250, 120, font_color=(255, 255, 0))
     # отрисовываем сцену
     pygame.display.flip()

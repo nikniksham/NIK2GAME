@@ -9,14 +9,13 @@ class Player(Person, Sprite):
         Sprite.__init__(self)
         self.f = True
         super().__init__('sprite/person_sprites/' + frames_forward[0], coord, 200, 200, 100, 100, name, frames_forward, frames_back,
-                         frames_left, frames_right, size, armor)
+                         frames_left, frames_right, None, size, armor)
         # sites moving lists
 
         # downloading sprites
 
         # rect and move
-        self.rect = Rect((0, 20, 20, 10))
-        print(self.rect)
+        self.rect = Rect((0, 25, 20, 5))
         self.speed_boost = False
 
         # draw and animation
@@ -28,7 +27,7 @@ class Player(Person, Sprite):
 
     def update(self, left, right, up, down, platforms, enemy_platforms, shift):
         if self.die_f is False:
-            if shift:
+            if shift and self.food > 0:
                 speed = SPEED * 3
                 self.speed_boost = True
             else:
@@ -71,7 +70,10 @@ class Player(Person, Sprite):
         self.draw()
 
     def get_coord(self):
-        return self.rect.x, self.rect.y - 20
+        return self.rect.x, self.rect.y - 25
+
+    def get_rect(self):
+        return Rect(self.rect.x, self.rect.y - 25, 20, 30)
 
     def next_frame(self):
         self.count_next_frame += 1

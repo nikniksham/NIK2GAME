@@ -5,7 +5,6 @@ from pygame import Rect
 
 class Wall:
     def __init__(self, info, coord):
-        print(type(info) == tuple, info)
         if type(info) == tuple:
             self.image = info[0].get_image()
             if info[1] is None:
@@ -15,7 +14,6 @@ class Wall:
         else:
             self.image = info
             self.rect = Rect((coord[0], coord[1], self.image.get_size()[0], 30))
-        print(self.image, 'gggg')
 
         self.coord = coord[0], coord[1] - int(self.image.get_size()[1] - 30)
         self.types = ['object', 'Image']
@@ -97,7 +95,6 @@ def make_level(slow_key, slow, big_chunk_count=((0, 0), (1, 1))):
                         for _ in range(16):
                             if compresion >= random():
                                 count += 1
-                                print(blocks, 'dd')
                                 wall = Wall(choice(blocks), (chunk_x, chunk_y))
                             wall_bg = Wall(choice(bg_blocks).get_image(), (chunk_x, chunk_y))
                             if wall:
