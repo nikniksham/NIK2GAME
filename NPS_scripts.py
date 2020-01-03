@@ -1,15 +1,15 @@
 from MainClasss import *
 
-SPEED = 1
+SPEED = 2
 
 
 class WithSomeone(Person):
-    def __init__(self, image, coord, frames_forward, frames_back, frames_left, frames_right, name='Hog', armor=None, hp=None):
-        super().__init__(image, coord, 100, 100, 100, 100, name, frames_forward, frames_back, frames_left, frames_right,
-                         'NPS', armor=armor)
+    def __init__(self, name, image, coord, way_to_image, way_name, armor=None):
+        super().__init__(image, coord, 100, 100, 100, 100, name, way_to_image, way_name, armor)
         self.name = name
         self.add_type('NPS')
         self.die_f = False
+        self.random_point = [2500, 2500]
 
     def update(self, someone, platforms):
         if not self.die_f:
@@ -28,8 +28,26 @@ class WithSomeone(Person):
             self.rect.y += self.y_vel
             self.collide(0, self.y_vel, platforms)
             self.coord = self.rect.x, self.rect.y
-            if self.name != 'Hog':
-                self.draw()
+            self.draw()
+
+    def mov_to_random_point(self, platforms):
+        if not self.die_f:
+            if self.get_coord()[0] > self.random_point[0]:
+                self.x_vel = -SPEED
+            elif self.get_coord()[0] < self.random_point[0]:
+                self.x_vel = SPEED
+            if self.get_coord()[1] > self.random_point[1]:
+                self.y_vel = -SPEED
+            elif self.get_coord()[1] < self.random_point[1]:
+                self.y_vel = SPEED
+            self.rect.x += self.x_vel
+            self.collide(self.x_vel, 0, platforms)
+            self.rect.y += self.y_vel
+            self.collide(0, self.y_vel, platforms)
+            self.coord = self.rect.x, self.rect.y
+            self.draw()
+            if self.get_coord()[0] == self.random_point[0] and self.get_coord()[1] == self.random_point[1]:
+                self.random_point = [random.choice(range(5000)), random.choice(range(5000))]
 
     def draw_heal_point(self, camera, screen, image):
         rect = camera.object_coord(self.rect)
