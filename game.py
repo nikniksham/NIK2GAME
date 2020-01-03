@@ -1,8 +1,6 @@
 from create_level import *
 from player import Player
 from win32api import GetSystemMetrics
-# from NPS import *
-from MainClasss import *
 from multiprocessing.pool import ThreadPool
 from NPS_scripts import *
 from TestWeapon import *
@@ -66,58 +64,49 @@ if chunk_count == ((0,), (1, 1)):
     print(type(walls_group))
 else:
     walls_group, bg_group = make_level(list(slow.keys()), slow, chunk_count)
-    # print(walls_group, bg_group)
 # создание героя
 
 # картинки в для анимаций
 # движение вперёд
-top = ['Player_forward_1.bmp', 'Player_forward_2.bmp', 'Player_forward_3.bmp', 'Player_forward_4.bmp',
-       'Player_forward_5.bmp', 'Player_forward_6.bmp', 'Player_forward_7.bmp', 'Player_forward_8.bmp',
-       'Player_forward_9.bmp', 'Player_forward_10.bmp', 'Player_forward_11.bmp', 'Player_forward_12.bmp',
-       'Player_forward_13.bmp']
-# движение назад
-back = ['Player_back_1.bmp', 'Player_back_2.bmp', 'Player_back_3.bmp', 'Player_back_4.bmp', 'Player_back_5.bmp',
-        'Player_back_6.bmp', 'Player_back_7.bmp', 'Player_back_8.bmp', 'Player_back_9.bmp', 'Player_back_10.bmp',
-        'Player_back_11.bmp', 'Player_back_12.bmp', 'Player_back_13.bmp']
-# движение влево
-forward_left = ['Player_left_1.bmp', 'Player_left_2.bmp', 'Player_left_3.bmp', 'Player_left_4.bmp', 'Player_left_5.bmp',
-                'Player_left_6.bmp', 'Player_left_7.bmp', 'Player_left_8.bmp', 'Player_left_9.bmp',
-                'Player_left_10.bmp',
-                'Player_left_11.bmp', 'Player_left_12.bmp', 'Player_left_13.bmp']
-# движение вправо
-forward_right = ['Player_right_1.bmp', 'Player_right_2.bmp', 'Player_right_3.bmp', 'Player_right_4.bmp',
-                 'Player_right_5.bmp',
-                 'Player_right_6.bmp', 'Player_right_7.bmp', 'Player_right_8.bmp', 'Player_right_9.bmp',
-                 'Player_right_10.bmp',
-                 'Player_right_11.bmp', 'Player_right_12.bmp', 'Player_right_13.bmp']
 # смерть
 screen = camera.get_screen()
 
 die_frames = ['Player_fall_1.bmp', 'Player_fall_2.bmp', 'Player_fall_5.bmp',
               'Player_fall_6.bmp', 'Player_die_1.bmp', 'Player_die_2.bmp', 'Player_die_3.bmp', 'Player_die_4.bmp',
               'Player_die_5.bmp', 'Player_die_6.bmp']
-# создаём броню
-armor = Armor(f'sprite/person_sprites/{top[0]}', (35, 35), 'armor_nikniksham', 1, 20, 40,
-              'Защищает жопу от колющих и режущих ударов')
 shoot_image = ['Desert Eagle shoot 1.bmp', 'Desert Eagle shoot 2.bmp', 'Desert Eagle shoot 3.bmp',
                'Desert Eagle shoot 4.bmp', 'Desert Eagle shoot 5.bmp', 'Desert Eagle shoot 6.bmp',
                'Desert Eagle shoot 7.bmp', 'Desert Eagle shoot 8.bmp']
 # создаём самого героя
-hero = Player('MainHero', (35, 35), top, back, forward_left, forward_right)
-
+hero = Player('MainHero', (35, 35), 'person_sprites', 'Player')
+soldier_1 = WithSomeone('Soldier_1', 'sprite/NPS_sprites/forward/NPS_soldier_1/NPS_soldier_1_forward_1.bmp', (100, 100),
+                        'NPS_sprites', 'NPS_soldier_1')
+soldier_2 = WithSomeone('Soldier_1', 'sprite/NPS_sprites/forward/NPS_soldier_1/NPS_soldier_1_forward_1.bmp', (200, 100),
+                        'NPS_sprites', 'NPS_soldier_1')
+soldier_3 = WithSomeone('Soldier_1', 'sprite/NPS_sprites/forward/NPS_soldier_1/NPS_soldier_1_forward_1.bmp', (100, 200),
+                        'NPS_sprites', 'NPS_soldier_1')
+soldier_4 = WithSomeone('Soldier_1', 'sprite/NPS_sprites/forward/NPS_soldier_1/NPS_soldier_1_forward_1.bmp', (140, 90),
+                        'NPS_sprites', 'NPS_soldier_1')
+soldier_5 = WithSomeone('Soldier_1', 'sprite/NPS_sprites/forward/NPS_soldier_1/NPS_soldier_1_forward_1.bmp', (200, 200),
+                        'NPS_sprites', 'NPS_soldier_1')
+general = WithSomeone('General', 'sprite/NPS_sprites/forward/NPS_general/NPS_general_forward_1.bmp', (500, 500),
+                      'NPS_sprites', 'NPS_general')
 spike = EnemyBlock('sprite/blocks_sprites/spike.bmp', (480, 720), 1)
 spike2 = EnemyBlock('sprite/blocks_sprites/spike.bmp', (600, 720), 1)
 spike3 = EnemyBlock('sprite/blocks_sprites/spike.bmp', (720, 720), 1)
 spike4 = EnemyBlock('sprite/blocks_sprites/spike.bmp', (840, 720), 1)
 enemy_group = Group('sprite/blocks_sprites/spike.bmp', [spike, spike2, spike3, spike4])
-
+NPS_group = Group('sprite/NPS_sprites/forward/NPS_soldier_1/NPS_soldier_1_forward_1.bmp',
+                  [soldier_1, soldier_2, soldier_3, soldier_4, soldier_5, general])
 # создаём сцену (карту)
 # создаём сцену
 scene = Level('sprite/blocks_sprites/block_1.bmp', 'first_scene',
               (chunk_count[0] * 16 * 16 * size, chunk_count[0] * 16 * 16 * size))
 # добавляем чанки
 # добавляем чанк заднего фона
+# scene.add_object(soldier_1)
 scene.add_main_chunk(bg_group)
+scene.add_group(NPS_group)
 # добавляем чанк переднего плана
 scene.add_main_chunk(walls_group)
 scene.add_object(hero)
@@ -131,32 +120,7 @@ healpoint_NPS = Image('sprite/NPS_sprites/healpoint_nps.bmp')
 bullets = Group('sprite/bullets/standard_bullet.bmp')
 scene.add_group(bullets)
 resurrection = ImageButton('sprite/User_Interface/resurrection.bmp', (size_screen[0] // 2 - 100, size_screen[1] // 2 - 100))
-NPS = WithSomeone('sprite/NPS_sprites/hog.bmp', (100, 100), ['hog.bmp'], ['hog.bmp'], ['hog.bmp'], ['hog.bmp'], hp=100)
-soldier_forward = ['NPS_soldier_1_forward_1.bmp', 'NPS_soldier_1_forward_2.bmp', 'NPS_soldier_1_forward_3.bmp',
-                   'NPS_soldier_1_forward_4.bmp', 'NPS_soldier_1_forward_5.bmp', 'NPS_soldier_1_forward_6.bmp',
-                   'NPS_soldier_1_forward_7.bmp', 'NPS_soldier_1_forward_8.bmp', 'NPS_soldier_1_forward_9.bmp',
-                   'NPS_soldier_1_forward_10.bmp', 'NPS_soldier_1_forward_11.bmp', 'NPS_soldier_1_forward_12.bmp',
-                   'NPS_soldier_1_forward_13.bmp']
-soldier_back = ['NPS_soldier_1_back_1.bmp', 'NPS_soldier_1_back_2.bmp', 'NPS_soldier_1_back_3.bmp',
-                'NPS_soldier_1_back_4.bmp', 'NPS_soldier_1_back_5.bmp', 'NPS_soldier_1_back_6.bmp',
-                'NPS_soldier_1_back_7.bmp', 'NPS_soldier_1_back_8.bmp', 'NPS_soldier_1_back_9.bmp',
-                'NPS_soldier_1_back_10.bmp', 'NPS_soldier_1_back_11.bmp', 'NPS_soldier_1_back_12.bmp',
-                'NPS_soldier_1_back_13.bmp']
-soldier_left = ['NPS_soldier_1_left_1.bmp', 'NPS_soldier_1_left_2.bmp', 'NPS_soldier_1_left_3.bmp',
-                'NPS_soldier_1_left_4.bmp', 'NPS_soldier_1_left_5.bmp', 'NPS_soldier_1_left_6.bmp',
-                'NPS_soldier_1_left_7.bmp', 'NPS_soldier_1_left_8.bmp', 'NPS_soldier_1_left_9.bmp',
-                'NPS_soldier_1_left_10.bmp', 'NPS_soldier_1_left_11.bmp', 'NPS_soldier_1_left_12.bmp',
-                'NPS_soldier_1_left_13.bmp']
-soldier_right = ['NPS_soldier_1_right_1.bmp', 'NPS_soldier_1_right_2.bmp', 'NPS_soldier_1_right_3.bmp',
-                 'NPS_soldier_1_right_4.bmp', 'NPS_soldier_1_right_5.bmp', 'NPS_soldier_1_right_6.bmp',
-                 'NPS_soldier_1_right_7.bmp', 'NPS_soldier_1_right_8.bmp', 'NPS_soldier_1_right_9.bmp',
-                 'NPS_soldier_1_right_10.bmp', 'NPS_soldier_1_right_11.bmp', 'NPS_soldier_1_right_12.bmp',
-                 'NPS_soldier_1_right_13.bmp']
-soldier = WithSomeone('sprite/NPS_sprites/NPS_soldier_1_forward_1.bmp', [200, 200], soldier_forward, soldier_back,
-                      soldier_left, soldier_right, hp=200, name='Soldier')
-scene.add_object(soldier)
 scene.add_group(enemy_group)
-scene.add_object(NPS)
 heal_point = Image('sprite/User_Interface/heal_point.bmp')
 # цикл работает
 run = True
@@ -229,11 +193,19 @@ while run:
         hero.die('sprite/person_sprites/', [die_frames])
     if hero.get_die():
         resurrection.draw(hero.resurrection, screen)
-    NPS.update(hero, walls_group)
-    soldier.update(hero, walls_group)
-    NPS.draw_heal_point(camera, screen, healpoint_NPS)
-    soldier.draw_heal_point(camera, screen, healpoint_NPS)
     Desert_eagle.set_coord([hero.get_coord()[0] + 5, hero.get_coord()[1] + 8])
+    soldier_1.update(general, walls_group)
+    soldier_1.draw_heal_point(camera, screen, healpoint_NPS)
+    soldier_2.update(general, walls_group)
+    soldier_2.draw_heal_point(camera, screen, healpoint_NPS)
+    soldier_3.update(general, walls_group)
+    soldier_3.draw_heal_point(camera, screen, healpoint_NPS)
+    soldier_4.update(general, walls_group)
+    soldier_4.draw_heal_point(camera, screen, healpoint_NPS)
+    soldier_5.update(general, walls_group)
+    soldier_5.draw_heal_point(camera, screen, healpoint_NPS)
+    general.mov_to_random_point(walls_group)
+    general.draw_heal_point(camera, screen, healpoint_NPS)
     print_text(str(int(camera.clock.get_fps())), size_screen[0] - 250, 120, font_color=(255, 255, 0))
     # отрисовываем сцену
     pygame.display.flip()

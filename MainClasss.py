@@ -3,6 +3,7 @@ import random
 from pygame.sprite import Sprite, collide_rect
 from pygame import image, Rect
 import math
+import os
 
 # в этом файле реализуется логика взаимодействия объектов между собой
 # убедительна просьба прочитать инструкцию перед написанием классов чтобы всем было удобнее
@@ -71,7 +72,7 @@ class MainObject:
 
 
 class Image(MainObject, Sprite):
-    def __init__(self, filename, transpote_color=(255, 255, 255), coord=(0, 0), size=None):
+    def __init__(self, filename, transpote_color=(255, 255, 255), coord=(0, 0)):
         super().__init__()
         Sprite.__init__(self)
         # добавляем тип Image
@@ -123,9 +124,9 @@ class Image(MainObject, Sprite):
 
 
 class Object(Image):
-    def __init__(self, image, coord, size=None, transpote_color=(255, 255, 255)):
+    def __init__(self, image, coord, transpote_color=(255, 255, 255)):
         if type(image) == str:
-            super().__init__(image, transpote_color, coord, size)
+            super().__init__(image, transpote_color, coord)
         else:
             MainObject.__init__(self)
             self.image = image
@@ -431,8 +432,8 @@ class Camera(MainObject):
 
 
 class Item(Object):
-    def __init__(self, image, coord, name, max_count, size=None, info='', count=0):
-        super().__init__(image, coord, size)
+    def __init__(self, image, coord, name, max_count, info='', count=0):
+        super().__init__(image, coord)
         global ID
         self.add_type('Item')
         # максимальное количество предметов данного типа
@@ -499,10 +500,10 @@ class Item(Object):
 # и что такое и чем отличается
 # self.armor - bool, int, str?
 class Armor(Item):
-    def __init__(self, image, coord, name, max_count, armor, armor_hp, armor_max_hp, size=None, info=''):
+    def __init__(self, image, coord, name, max_count, armor, armor_hp, armor_max_hp, info=''):
         # тип объекта: Armor
         # Я исправил heat_point на heal_point, тк heat_point переводится как: 'тепловая точка'
-        super().__init__(image, coord, name, max_count, size, info)
+        super().__init__(image, coord, name, max_count, info)
         self.add_type('Armor')
         #  параметр: защита
         self.armor = armor
@@ -553,8 +554,8 @@ class Armor(Item):
 
 
 class Bullet(Item):
-    def __init__(self, image, coord, name, max_count, type_bullet, x_vel=None, y_vel=None, attack_radius=None, size=None, info=''):
-        super().__init__(image, coord, name, max_count, size, info)
+    def __init__(self, image, coord, name, max_count, type_bullet, x_vel=None, y_vel=None, attack_radius=None, info=''):
+        super().__init__(image, coord, name, max_count, info)
         # добавляем тип: Bullet
         self.coord = coord
         self.attack_radius = attack_radius
@@ -590,9 +591,9 @@ class Bullet(Item):
 
 class Weapon(Bullet):
     def __init__(self, image, coord, name, max_count, type_bullet, type_damage, attack_radius,
-                 range_damage, attack_speed, accuracy, owner, size=None, info=''):
+                 range_damage, attack_speed, accuracy, owner, info=''):
         # тип объекта: Weapon
-        super().__init__(image, coord, name, max_count, type_bullet, size, info)
+        super().__init__(image, coord, name, max_count, type_bullet, info)
         self.add_type('Weapon')
         self.bullet = 0
         # типы урона: knife, firearm, missile, ret_damage
@@ -663,10 +664,10 @@ class Tile(pygame.sprite.Sprite):
 
 
 class HealPointObject(Object):
-    def __init__(self, image, coord, hp, max_heal_point, size=None):
+    def __init__(self, image, coord, hp, max_heal_point):
         # объект типа: HealPointObject
         # print(image, coord, size)
-        super().__init__(image, coord, size)
+        super().__init__(image, coord)
         self.add_type('HealPointObject')
         # максимальное количество жизней
         self.max_heal_point = max_heal_point
@@ -719,9 +720,9 @@ class HealPointObject(Object):
 
 
 class MovingObject(HealPointObject):
-    def __init__(self, image, coord, hp, max_heal_point, armor, food, max_food_point, size=None):
+    def __init__(self, image, coord, hp, max_heal_point, armor, food, max_food_point):
         # тип объекта: MovingObject
-        super().__init__(image, coord, hp, max_heal_point, size)
+        super().__init__(image, coord, hp, max_heal_point)
         self.add_type('MovingObject')
         # очки еды
         self.food = food
@@ -816,13 +817,12 @@ class MovingObject(HealPointObject):
 
 
 class AnimationObject(MovingObject):
-    def __init__(self, images, coord, hp, max_heal_point, food, max_food_point, frames_forward, frames_back,
-                 frames_left,
-                 frames_right, NPS=None, size=None, armor=None):
+    def __init__(self, images, coord, hp, max_heal_point, food, max_food_point, way_to_image, way_name, armor=None):
         self.die_f = False
-        super().__init__(images, coord, hp, max_heal_point, armor, food, max_food_point, size)
+        super().__init__(images, coord, hp, max_heal_point, armor, food, max_food_point)
         self.add_type('AnimationObject')
         self.die_frames = []
+        self.way_name = way_name
         self.eat = 0
         self.die_frame = 0
         self.count_die_frames = 0
@@ -844,21 +844,18 @@ class AnimationObject(MovingObject):
         # ускорение объекта (бег)
         self.speed_boost = False
         # downloading sprites
-        # изображения ходьбы вверх
-        way = 'sprite/person_sprites/'
-        if NPS is not None:
-            way = 'sprite/NPS_sprites/'
-        for frame in frames_forward:
-            self.frames_forward.append(Image(way + frame))
-        # изображения ходьбы вниз
-        for frame in frames_back:
-            self.frames_back.append(Image(way + frame))
-        # изобрадения ходьбы влево
-        for frame in frames_left:
-            self.frames_left.append(Image(way + frame))
-        # избражения ходьбы вправо
-        for frame in frames_right:
-            self.frames_right.append(Image(way + frame))
+        self.way_to_image = way_to_image
+        types = ['forward', 'back', 'left', 'right']
+        for elem in types:
+            for i in range(1, len(os.listdir(path=f'sprite/{way_to_image}/{elem}/{way_name}')) + 1):
+                if elem == 'forward':
+                    self.frames_forward.append(Image(f'sprite/{way_to_image}/{elem}/{way_name}/{way_name}_{elem}_{i}.bmp'))
+                if elem == 'back':
+                    self.frames_back.append(Image(f'sprite/{way_to_image}/{elem}/{way_name}/{way_name}_{elem}_{i}.bmp'))
+                if elem == 'left':
+                    self.frames_left.append(Image(f'sprite/{way_to_image}/{elem}/{way_name}/{way_name}_{elem}_{i}.bmp'))
+                if elem == 'right':
+                    self.frames_right.append(Image(f'sprite/{way_to_image}/{elem}/{way_name}/{way_name}_{elem}_{i}.bmp'))
 
     def die(self, filename=None, die_frames=None):
         self.die_f = True
@@ -940,11 +937,9 @@ class AnimationObject(MovingObject):
 
 
 class Person(AnimationObject):
-    def __init__(self, image, coord, hp, max_heal_point, food, max_food_point, name, frames_forward, frames_back,
-                 frames_left, frames_right, NPS=None, size=None, armor=None):
+    def __init__(self, image, coord, hp, max_heal_point, food, max_food_point, name, way_to_image, way_name, armor=None):
         # тип объекта: Person
-        super().__init__(image, coord, hp, max_heal_point, food, max_food_point, frames_forward, frames_back,
-                         frames_left, frames_right, NPS, size)
+        super().__init__(image, coord, hp, max_heal_point, food, max_food_point, way_to_image, way_name, armor)
         self.add_type('Person')
         self.name = name
         # имя персонажа
@@ -960,9 +955,9 @@ class Person(AnimationObject):
 
 
 class Eat(Item):
-    def __init__(self, image, coord, name, max_count, hp, food, owner, armor=0, size=None, info=''):
+    def __init__(self, image, coord, name, max_count, hp, food, owner, armor=0, info=''):
         # объект типа: Eat
-        super().__init__(image, coord, name, max_count, size, info)
+        super().__init__(image, coord, name, max_count, info)
         self.add_type('Eat')
         self.heal_point = hp
         self.armor = armor
