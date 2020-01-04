@@ -4,12 +4,11 @@ from pygame.transform import *
 import os
 
 pygame.init()
-REPOSITORY = 'date'
 FONT_STYLE = 'arial.ttf'
 
 
 def load_image(name, colorkey=None):
-    fullname = os.path.join(REPOSITORY, name)
+    fullname = os.path.join(os.getcwd(), name)
     try:
         image = pygame.image.load(fullname)
     except pygame.error as message:
