@@ -91,8 +91,9 @@ class ChunkBG(Group):
 
 
 class Chunk(Group):
-    def __init__(self, coord_lu, coord_rd):
+    def __init__(self, coord_lu):
         super().__init__('sprite/blocks_sprites/Chunk.bmp')
+        coord_rd = coord_lu[0] + 480, coord_lu[1] + 480
         # добавляем тип Chunk
         self.add_type('Chunk')
         # левая верхняя координата чанка

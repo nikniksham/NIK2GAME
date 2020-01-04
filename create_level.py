@@ -1,6 +1,16 @@
 from Chunk import *
-from random import choice, random
+from random import randrange, random
 from pygame import Rect
+from Framework import Application, Widget, AnimationWidgets, load_image, scale_to, Text, ProgressBar
+from win32api import GetSystemMetrics
+
+height_barr = 35
+offset_from_the_sides = 110
+from_bottom = -12
+WHITE = (255, 255, 255)
+REPOSITORY = 'sprite\\User_Interface\\'
+
+size_screen = (GetSystemMetrics(0), GetSystemMetrics(1))
 
 
 class Wall:
@@ -51,81 +61,81 @@ class Wall:
         return self.rect.x, self.rect.y
 
 
-def make_level(slow_key, slow, big_chunk_count=((0, 0), (1, 1))):
-    # chunk_count количество чанков по горизионтали и вертикали
-    # размер одного блока
-    size = 30
-    # частота создания блоков
-    compresion = 0.01
-    # список чанков с которыми объект может столкнуться
-    walls_group = MainChunk()
-    # список чанков на заднего фона
-    bg_walls_group = MainChunk()
-    # координаты по которым расположены чанки
-    x, y = (big_chunk_count[0][0] * 7680, big_chunk_count[0][1] * 7680)
-    # print(big_chunk_count, 'gg')
-    for _ in range(big_chunk_count[0][1], big_chunk_count[1][1]):
-        for _ in range(big_chunk_count[0][0], big_chunk_count[1][0]):
-            big_chunk = BigChunk((x, y), (x + 7680, y + 7680))
-            big_chunk_bg = BigChunk((x, y), (x + 7680, y + 7680))
-            # print((x, y), (x + 7680, y + 7680))
-            # стена на переднем плане с которой человек может столкнуться
-            wall = False
-            # создаём чанки
-            # по игрику
-            x_, y_ = x, y
-            for _ in range(16):
-                # по иксу
-                for _1 in range(16):
-                    # чанк объектов с которыми объект может столкнуться
-                    chunk = Chunk((x_, y_), (x_ + 480, y_ + 480))
-                    # чанк объектов на заднем фоне
-                    chunk_bg = ChunkBG((x_, y_), (x_ + 480, y_ + 480))
-                    key = ''
-                    while not key.startswith('b'):
-                        key = choice(slow_key)
-                    bg_blocks, blocks, compresion = slow[key], slow['t' + key[1:]], slow['c' + key[1:]]
-                    # координаты по которым создаются объекты для чанков
-                    chunk_x, chunk_y = x_, y_
-                    count = 0
-                    add_count = 0
-                    # создание объектов по игрику
-                    for _ in range(16):
-                        # создание объектов по игксу
-                        for _ in range(16):
-                            if compresion >= random():
-                                count += 1
-                                wall = Wall(choice(blocks), (chunk_x, chunk_y))
-                            wall_bg = Wall(choice(bg_blocks).get_image(), (chunk_x, chunk_y))
-                            if wall:
-                                add_count += 1
-                                chunk.add_object(wall)
-                            chunk_bg.add_object(wall_bg)
-                            wall = False
-                            # добавляем размер болка по иксу (сдивагаемся на один блок враво)
-                            chunk_x += size
-                        # переходим на новую строку изображений \n
-                        # на одну строку вниз
-                        chunk_y += size
-                        # в начало ряда
-                        chunk_x = x_
-                    chunk.check_cilision()
-                    chunk_bg.check_cilision()
-                    # добавляем чанк в список чанков с которыми объект может столкнуться стену
-                    big_chunk.add_chunk(chunk)
-                    # добавляем чанк в список чанков заднего фона
-                    big_chunk_bg.add_chunk(chunk_bg)
-                    # передвигаемся на один чанк вправо
-                    x_ += 480
-                # переходим на новую строку чанков \т
-                # в начало строки
-                x_ = x
-                # переходим на новую строку
-                y_ += 480
-            walls_group.add_chunk(big_chunk)
-            bg_walls_group.add_chunk(big_chunk_bg)
-            x += 7680
-        x = 0
-        y += 7680
-    # возвращаем список список чанков с которыми объект может столкнуться и список чанков на заднего фона
-    return walls_group, bg_walls_group
+class Load(Application):
+    def __init__(self, size_screen, size_world, slow,  bar, FULLSCREEN=False, fill_color=(0, 0, 0)):
+        super().__init__(size_screen, fill_color, FULLSCREEN)
+        self.count = 0
+        self.bar = bar
+        self.name_world = 'world_TEST.wrld'
+        self.size_world = size_world
+        new_slow = {}
+        for key, val in slow.items():
+            if 'n' in key:
+                if 'c' != key[0]:
+                    new_slow[key] = len(val)
+                else:
+                    new_slow[key] = val
+        self.slow = new_slow
+        for key, val in self.slow.items():
+            if 'b' == key[0]:
+                self.block_bg = (key, val)
+            if 't' == key[0]:
+                self.block = (key, val)
+            if 'c' == key[0]:
+                self.compression = val
+        self.creating_coord = [0, 0]
+        size_world = size_world[1]
+        self.end_coord = (size_world[0] * 256, size_world[1] * 256)
+        self.add_event(self.generate_256)
+
+    def generate_256(self):
+        with open(self.name_world, 'a') as world:
+            for i in range(256):
+                # переключаемся на слой ниже если прошлый закончили
+                if self.creating_coord[0] + 1 > self.end_coord[0]:
+                    self.creating_coord[1] += 1
+                    # если сгенерировали последний слой
+                    if self.creating_coord[1] == self.end_coord[1]:
+                        self.running = False
+                        break
+                    world.write('\n')
+                    # переключаем коретку на новую строку если закончили эту строку
+                    self.creating_coord[0] = 0
+                else:
+                    self.creating_coord[0] += 1
+                if self.compression >= random():
+                    world.write(f'{self.block_bg[0]}{randrange(self.block_bg[1])} {self.block[0]}{randrange(self.block[1])}\t')
+                else:
+                    world.write(f'{self.block_bg[0]}{randrange(self.block_bg[1])} NoneNone\t')
+                self.count += 1
+
+        self.bar.update_bar(self.count / (self.end_coord[1] * self.end_coord[0]))
+
+
+
+
+def make_level(slow_keys, slow, chunk_count):
+    image = load_image(REPOSITORY + 'fon 1.png')
+    image = scale_to(image, (GetSystemMetrics(0), GetSystemMetrics(1)))
+    bg = Widget(image, (0, 0), is_zooming=False)
+
+    barr_top = load_image(REPOSITORY + 'barr_front.png', (255, 255, 255))
+    barr_top = scale_to(barr_top, (GetSystemMetrics(0) - 2 * offset_from_the_sides, height_barr))
+    barr_back = load_image(REPOSITORY + 'barr back.png', -1)
+    barr_back = scale_to(barr_back, (GetSystemMetrics(0) - 2 * offset_from_the_sides, height_barr))
+    barr = ProgressBar(barr_top, barr_back, (offset_from_the_sides, from_bottom), from_color=(255, 0, 0), to_color=(0, 255, 0))
+
+    text_prozent = Text('', height_barr, (GetSystemMetrics(0) - offset_from_the_sides + 5, from_bottom + 2), color=(100, 255, 100))
+    barr.add_display(text_prozent)
+
+    animation = AnimationWidgets([load_image(REPOSITORY + '0.png', -1), load_image(REPOSITORY + '1.png', -1), load_image(REPOSITORY + '2.png', -1), load_image(REPOSITORY + '3.png', -1)], (10, from_bottom), 0.65)
+
+    app = Load(size_screen, chunk_count, slow, barr, FULLSCREEN=True)
+
+    app.add_widget(bg, 0)
+    app.add_widget(barr)
+    app.add_widget(text_prozent)
+    app.add_widget(animation)
+    barr.update_bar(0)
+
+    app.run()
