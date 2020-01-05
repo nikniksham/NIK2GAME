@@ -33,8 +33,9 @@ class ChunkImage(Surface, Sprite):
 
 
 class ChunkBG(Group):
-    def __init__(self, coord_lu, coord_rd):
+    def __init__(self, coord_lu):
         super().__init__('sprite/blocks_sprites/Chunk.bmp')
+        coord_rd = coord_lu[0] + 480, coord_lu[1] + 480
         self.image = Surface((480, 480))
         # добавляем тип Chunk
         self.add_type('ChunkBG')
@@ -149,7 +150,8 @@ class Chunk(Group):
 
 
 class BigChunk:
-    def __init__(self, coord_lu, coord_rd):
+    def __init__(self, coord_lu):
+        coord_rd = [coord_lu[0] + 7680, coord_lu[1] + 7680]
         # левая верхняя координата чанка
         self.coord_lu = coord_lu
         # правая нижняя координата чанка
