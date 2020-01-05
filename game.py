@@ -97,8 +97,7 @@ spike3 = EnemyBlock('sprite/blocks_sprites/spike.bmp', (720, 720), 1)
 spike4 = EnemyBlock('sprite/blocks_sprites/spike.bmp', (840, 720), 1)
 enemy_group = Group('sprite/blocks_sprites/spike.bmp', [spike, spike2, spike3, spike4])
 NPS_group = Group('sprite/NPS_sprites/forward/NPS_soldier_1/NPS_soldier_1_forward_1.bmp',
-                  [soldier_1, soldier_2, soldier_3, soldier_4, soldier_5, general])
-# создаём сцену (карту)
+                  [soldier_1, soldier_2, soldier_3, soldier_4, soldier_5, general])# создаём сцену (карту)
 # создаём сцену
 scene = Level('sprite/blocks_sprites/block_1.bmp', 'first_scene',
               (chunk_count[0] * 16 * 16 * size, chunk_count[0] * 16 * 16 * size))
@@ -111,7 +110,7 @@ scene.add_group(NPS_group)
 scene.add_main_chunk(walls_group)
 scene.add_object(hero)
 Desert_eagle = WeaponObj('sprite/Weapon_sprites/Desert Eagle.bmp', (360, 360), 'DesertEagle', 1, 'simple', 'simple',
-                         2000, [10, 20], 200, 1, None, shoot_image, screen=screen, aim=hero)
+                         2000, [50, 70], 200, 1, None, shoot_image, screen=screen, aim=hero)
 scene.add_object(Desert_eagle)
 # добавляем главного героя
 # устанавливаем главного героя главным героем
