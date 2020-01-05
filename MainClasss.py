@@ -398,6 +398,7 @@ class Camera(MainObject):
             # количетсво объектов на 1 обльше
             # и выводим из на дисплей отнасительно главного героя
             if object.get_is_bg():
+                count +=1
                 self.screen.blit(object.get_image(), self.object_coord(object.get_coord()))
             else:
                 if object.get_layer() in layer:
@@ -407,9 +408,9 @@ class Camera(MainObject):
         for object in level.get_main_chunks(self):
             if str(type(object)) != '<class \'Chunk.ChunkImage\'>':
                 # количетсво объектов на 1 обльше
-                count += 1
                 # выводим на экран объект
                 if object.get_is_bg():
+                    count += 1
                     self.screen.blit(object.get_image(), self.object_coord(object.get_coord()))
                 else:
                     if object.get_layer() in layer:
@@ -420,7 +421,9 @@ class Camera(MainObject):
         layers.sort()
         for key in layers:
             for object in layer[key]:
+                count += 1
                 self.screen.blit(object.get_image(), self.object_coord(object.get_coord()))
+                print(count)
         # обнавляем экран
         # poop = draw.circle(self.screen, (255, 0, 0), (self.size_screen[0] // 2, self.size_screen[1] // 2), 15)
         # line_1 = draw.line(self.screen, (0, 0, 0), (0, 0), (self.size_screen[0], self.size_screen[1]), 5)
