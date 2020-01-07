@@ -1,9 +1,10 @@
 import pygame
 import random
 from pygame.sprite import Sprite, collide_rect
-from pygame import image, Rect
+from pygame import image, Rect, Surface
 import math
 import os
+
 
 # в этом файле реализуется логика взаимодействия объектов между собой
 # убедительна просьба прочитать инструкцию перед написанием классов чтобы всем было удобнее
@@ -78,7 +79,10 @@ class Image(MainObject, Sprite):
         # добавляем тип Image
         self.add_type('Image')
         # загружаем изображение
-        self.image = image.load(filename).convert()
+        if type(filename) == str:
+            self.image = image.load(filename).convert()
+        else:
+            self.image = filename
         # прямоугольник координат и размера rect
         self.coord = coord
         self.rect = self.image.get_rect()
@@ -229,17 +233,206 @@ class Group(Object):
         return f'Group: {self.get_group()}'
 
 
-class Level(Group):
-    def __init__(self, image, name, size_level, objects=[]):
+class BotGroup(MainObject):
+    def __init__(self, type, name_group):
+        super().__init__()
+        self.add_type('Group')
+        self.add_type('BotGroup')
+        self.friendly = ''
+        self.set_friednly(type)
+        self.type_bots = name_group
+        self.bots = []
+
+    def set_friednly(self, type):
+        if type in ['enemy', 'neutral']:
+            self.friendly = type
+            return True
+        return False
+
+    def get_friednly(self):
+        return self.friendly
+
+    def add_bot(self, *bots):
+        for bot in bots:
+            if bot.is_type('NPS'):
+                self.bots.append(bot)
+                self.bots.add_group(self)
+
+    def remove_bot(self, bot):
+        if bot in self.bots:
+            self.bots.remove(bot)
+            bot.remove_group()
+            return True
+        return False
+
+    def get_objects(self):
+        return self.bots[:]
+
+    def update(self, main_group):
+        pass
+
+
+class Build(Object):
+    def __init__(self, coord, image_out, image_in=None, door_rect=None):
+        super().__init__(image_out, coord)
+        self.in_hom = False
+        if image_in is not None and door_rect is not None:
+            self.can_join = True
+            self.image_in = image_in
+            self.image_out = image_out
+            door_rect.x, door_rect.y = door_rect.x + coord[0], door_rect.y + coord[1]
+            self.door_rect = door_rect
+            self.up_wall_rect = Image(Surface(self.image_in.get_width(), 5), coord=coord)
+            self.left_wall_rect = Image(Surface(5, self.image_in.get_height()), coord=coord)
+            self.right_wall_rerct = Image(Surface(5, self.image_in.get_height()),
+                                          coord=(coord[0] + self.image_in.get_width() - 5, coord[1]))
+            self.down_wall_rerct = Image(Surface(5, self.image_in.get_height()),
+                                          coord=(coord[0], coord[1] + self.image_in.get_height() - 5))
+        else:
+            self.can_join = False
+
+    def can_entering(self, object):
+        if self.can_join and self.door_rect.colliderect(object.get_rect()):
+            object.rect.bottom = self.down_wall_rerct.top
+            object.rect.left = self.left_wall_rect.right
+            return True
+        return False
+
+    def set_in_hom(self, in_hom: bool):
+        if self.can_join:
+            self.in_hom = bool(in_hom)
+            if self.in_hom:
+                self.image = self.image_in
+            else:
+                self.image = self.image_out
+
+    def get_walls(self):
+        res = []
+        if self.in_hom:
+            res.append(self.left_wall_rect)
+            res.append(self.right_wall_rerct)
+            res.append(self.up_wall_rect)
+            res.append(self.down_wall_rerct)
+        else:
+            res.append(self)
+
+
+class Site(MainObject):
+    def __init__(self, bot_group=None):
+        super().__init__()
+        self.add_type('Group')
+        self.add_type('Site')
+        self.objects = []
+        self.builds = []
+        if bot_group is not None and bot_group.is_type('BotGroup'):
+            self.bots = bot_group
+        else:
+            self.bots = None
+
+    def add_object(self, object):
+        self.builds.append(object)
+
+    def remove_object(self, object):
+        if object in self.builds:
+            self.builds.remove(object)
+            return True
+        return False
+
+    def get_objects(self):
+        res = self.builds[:]
+        if self.bots is not None:
+            res += self.bots.get_objects()
+        return res
+
+    def get_walls(self):
+        res = self.objects[:]
+        for build in self.builds:
+            res += build.get_walls()
+
+
+class MainGroup(MainObject):
+    def __init__(self):
+        super().__init__()
+        self.add_type('Group')
+        self.all_objects = []
+        self.bullets = []
+        self.bots = []
+        self.team = []
+        self.sites = []
+
+    def add_bot_group(self, bot_group):
+        if bot_group.is_type('BotGroup'):
+            self.bots.append(bot_group)
+            return True
+        return False
+
+    def remove_bots_group(self, bots_group):
+        if bots_group in self.bots:
+            self.bots.remove(bots_group)
+            return True
+        return False
+
+    def get_all_objects(self):
+        res = self.all_objects[:]
+        res += self.get_bots()
+        res += self.team[:]
+        for site in self.sites:
+            res += site.get_objects()
+        return res
+
+    def get_walls(self):
+        res = self.all_objects[:]
+        for site in self.sites:
+            res += site.get_wall()
+        return res
+
+    def get_bots(self, type=None):
+        res = []
+        for bots in self.bots:
+            if type is None or type == bots.get_friednly(type):
+                res += bots.get_objects()
+        return res
+
+    def add_to_team(self, object):
+        self.team.append(object)
+
+    def remove_from_team(self, object):
+        if object in self.team:
+            self.team.remove(object)
+            return True
+        return False
+
+    def get_team(self):
+        return self.team
+
+    def add_site(self, site):
+        if site.is_type('Site'):
+            self.sites.append(site)
+            return True
+        return False
+
+    def remove_site(self, site):
+        if site in self.sites:
+            self.sites.remove(site)
+            return True
+        return False
+
+    def get_sites(self):
+        return self.sites
+
+
+class Level(MainObject):
+    def __init__(self, name, main_hero):
         self.main_chunks = []
-        super().__init__(image, objects)
+        super().__init__()
         # добавляем тип: Level
         self.add_type('Level')
+        self.main_group = MainGroup()
+        self.main_group.add_to_team(main_hero)
         # название сцены
         self.name = name
         # размер угровня
-        self.size_level = size_level
-        self.main_hero = self
+        self.main_hero = main_hero
 
     def add_main_chunk(self, main_chunk):
         # если объект типа МainChunk то он нам подходит возвращаем истину в противоположном случае лож
@@ -266,35 +459,34 @@ class Level(Group):
         # возвращаем результат
         return res
 
-    def get_object(self, type=None):
-        # создаём список в который сохраняем результат
-        res_group = []
-        # проходимся по группам из списка групп
-        for group in self.get_group():
-            # добавляем в результат элементы списка группы
-            res_group += group.get_object(type)
-        # возвращаем результат
-        # проверяем есть фильтр или нет
-        if type is not None:
-            # добавляем объект в результат если он подходит
-            for object in self.objects:
-                # проверяем является ли объект наследником данного класса
-                if object.is_type(type):
-                    res_group.append(object)
-        else:
-            # добавляем все объекты в сисок результата
-            for object in self.objects:
-                res_group.append(object)
-        return res_group
+    def get_bots(self, type=None):
+        return self.main_group.get_bots(type)
 
-    def set_main_hero(self, object):
-        # если получилось установить главного героя возвращает истину если не получилось лож
-        # проверяем что объект наследник класса Object
-        if object.is_type('Object'):
-            # если объект подходит то задаём его главным гереом
-            self.main_hero = object
-            return True
-        return False
+    def add_bots_group(self, group):
+        return self.main_group.add_bot_group(group)
+
+    def remove_bots_group(self, group):
+        return self.main_group.remove_bots_group(group)
+
+    def add_site(self, site):
+        return self.main_group.add_site(site)
+
+    def remove_site(self, site):
+        return self.main_group.remove_site(site)
+
+    def get_object(self):
+        # создаём список в который сохраняем результат
+        res = []
+        # проходимся по группам из списка групп
+        res += self.main_group.get_all_objects()
+        print(len(res))
+        # возвращаем результат
+        return res
+
+    def get_walls(self):
+        res = self.main_group.get_walls()
+        res += self.main_chunks[0].get_object()
+        return res
 
     def get_main_hero(self):
         # возвращаем главного героя сцены
@@ -302,12 +494,10 @@ class Level(Group):
 
 
 class Camera(MainObject):
-    def __init__(self, size_screen, bg_color, border_map=(None, None, None, None)):
+    def __init__(self, size_screen, bg_color):
         super().__init__()
         # создаём таймер
         self.clock = pygame.time.Clock()
-        # кортеж границ сцены None если с этой стороны нет границы
-        self.border_map = border_map
         # добавляем тип Camera
         self.add_type('Camera')
         # размер экрана
@@ -316,7 +506,7 @@ class Camera(MainObject):
         self.bg_color = bg_color
         # создаём экран
         pygame.init()
-        self.screen = pygame.display.set_mode(self.size_screen, pygame.FULLSCREEN)
+        self.screen = Surface(self.size_screen)
         # координаты левого верхнего угла
         self.coord = (0, 0)
 
@@ -328,29 +518,9 @@ class Camera(MainObject):
         # получить координаты левой верхней по которым расположен экран
         return self.coord
 
-    def get_screen(self):
-        # возвращает экран
-        return self.screen
-
     def get_screen_coord(self, main_hero_coord):
         # находим левый верхний угол экрана при данном положении главного героя
-        self.coord = [main_hero_coord[0] - self.size_screen[0] // 2, main_hero_coord[1] - self.size_screen[1] // 2]
-        # проверяем границу сверху
-        if self.border_map[0] is not None:
-            if self.coord[1] < self.border_map[0]:
-                self.coord[1] = self.border_map[0]
-        # проверяем границу снизу
-        if self.border_map[1] is not None:
-            if self.coord[1] > self.border_map[1] - self.size_screen[1]:
-                self.coord[1] = self.border_map[1] - self.size_screen[1]
-        # проверяем границу слева
-        if self.border_map[2] is not None:
-            if self.coord[0] < self.border_map[2]:
-                self.coord[0] = self.border_map[2]
-        # проверяем границу справа
-        if self.border_map[3] is not None:
-            if self.coord[0] > self.border_map[3] - self.size_screen[0]:
-                self.coord[0] = self.border_map[3] - self.size_screen[0]
+        self.coord = [main_hero_coord[0] - self.size_screen[0] // 2 + 15, main_hero_coord[1] - self.size_screen[1] // 2 + 15]
 
     def create(self):
         self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
@@ -358,25 +528,6 @@ class Camera(MainObject):
     def object_coord(self, rect):
         # вычисляем координаты на экране относительно персонажа
         return rect[0] - self.coord[0], rect[1] - self.coord[1]
-
-    def draw_interface(self, hp, hp_person, food_person, coord):
-        hp_coord = coord[0]
-        food_coord = coord[1]
-        self.screen.blit(hp.get_image(), hp_coord)
-        self.screen.blit(hp.get_image(), food_coord)
-        x_t = 280 * (food_person[0] / food_person[1])
-        x_b = x_t + 20
-        pygame.draw.polygon(self.screen, (174, 108, 72), ((food_coord[0] + 2, food_coord[1] + 2),
-                                                       (food_coord[0] + x_t, food_coord[1] + 2),
-                                                       (food_coord[0] + x_b - 2, food_coord[1] + 41),
-                                                       (food_coord[0] + 20, food_coord[1] + 42)))
-        if hp_person[0] > 0:
-            x_t = 280 * (hp_person[0] / hp_person[1])
-            x_b = x_t + 20
-            pygame.draw.polygon(self.screen, (255, 0, 0), ((hp_coord[0] + 2, hp_coord[1] + 2),
-                                                           (hp_coord[0] + x_t, hp_coord[1] + 2),
-                                                           (hp_coord[0] + x_b - 2, hp_coord[1] + 41),
-                                                           (hp_coord[0] + 20, hp_coord[1] + 42)))
 
     def draw(self, level):
         # заливаем экран цветом заднего фона
@@ -398,7 +549,7 @@ class Camera(MainObject):
             # количетсво объектов на 1 обльше
             # и выводим из на дисплей отнасительно главного героя
             if object.get_is_bg():
-                count +=1
+                count += 1
                 self.screen.blit(object.get_image(), self.object_coord(object.get_coord()))
             else:
                 if object.get_layer() in layer:
@@ -423,7 +574,7 @@ class Camera(MainObject):
             for object in layer[key]:
                 count += 1
                 self.screen.blit(object.get_image(), self.object_coord(object.get_coord()))
-                print(count)
+        print(count)
         # обнавляем экран
         # poop = draw.circle(self.screen, (255, 0, 0), (self.size_screen[0] // 2, self.size_screen[1] // 2), 15)
         # line_1 = draw.line(self.screen, (0, 0, 0), (0, 0), (self.size_screen[0], self.size_screen[1]), 5)
@@ -431,7 +582,7 @@ class Camera(MainObject):
         # заголовк программы количество кадров в секунду и количество предметов на сцене
         # обнавляем экран
         # ограничиваем количество кадров в секунду до 120
-        self.clock.tick(120)
+        return self.screen
 
 
 class Item(Object):
@@ -490,6 +641,70 @@ class Item(Object):
     def get_name(self):
         # возвращает имя объекта
         return self.name
+
+    def __str__(self):
+        return f'type {self.get_name()}, count {self.get_count()}'
+
+
+class Inventory(Item):
+    def __init__(self, size, items=[]):
+        self.size_inventory = size
+        self.inventory = []
+        for _ in range(size[1]):
+            self.inventory.append([])
+            for _ in range(size[0]):
+                if len(items) > 0:
+                    self.inventory[-1].append(items[-1])
+                    items.pop(-1)
+                else:
+                    self.inventory[-1].append(None)
+
+    def get_items(self, x=None, y=None):
+        res = []
+        if x is not None and y is not None:
+            res.append(self.inventory[y][x])
+        elif x is not None:
+            for y in range(self.size_inventory[1]):
+                res.append(self.inventory[y][x])
+        elif y is not None:
+            for x in range(self.size_inventory[0]):
+                res.append(self.inventory[y][x])
+        else:
+            for y in range(self.size_inventory[1]):
+                for x in range(self.size_inventory[0]):
+                    if self.inventory[y][x] is not None:
+                        res.append(self.inventory[y][x])
+        return res
+
+    def add_item(self, item, pos=None):
+        if pos is None:
+            for y in range(self.size_inventory[1]):
+                for x in range(self.size_inventory[0]):
+                    if self.inventory[y][x] is None:
+                        self.inventory[y][x] = item
+                        return True
+                    if self.inventory[y][x].get_name() == item.get_name():
+                        self.inventory[y][x].add_count(item)
+                        if item.get_count() == 0:
+                            return True
+            return item
+        else:
+            item = Item('ads', (123, 213), 'sg', 10)
+            if self.inventory[pos[1]][pos[0]] is None:
+                self.inventory[pos[1]][pos[0]] = item
+            elif item.get_name() == self.inventory[pos[1]][pos[0]].get_name():
+                self.inventory[pos[1]][pos[0]].add_count(item)
+                if item.get_count() > 0:
+                    return item
+                else:
+                    return True
+            else:
+                ret_item = self.inventory[pos[1]][pos[0]]
+                self.inventory[pos[1]][pos[0]] = item
+                return ret_item
+
+    def get_size(self):
+        return self.size_inventory
 
 
 # исправил на:
@@ -622,7 +837,8 @@ class Weapon(Bullet):
         sin, cos = hero.weapon.flight_path([mouse_x, mouse_y], coord_person)
         x_vel, y_vel = 10 * cos, 10 * sin
         # print(self.bullet, 'пуля')
-        bullet.add_object(Bullet(image, [coord[0] + 5, coord[1] + 10], 'bullet', 10, 'standard', x_vel, y_vel, self.attack_radius))
+        bullet.add_object(
+            Bullet(image, [coord[0] + 5, coord[1] + 10], 'bullet', 10, 'standard', x_vel, y_vel, self.attack_radius))
 
     def bullets_move(self, bullets, level, screen, weapon):
         person_sprites = []
@@ -772,51 +988,51 @@ class MovingObject(HealPointObject):
         return self.armor
 
     def collide(self, x_vel, y_vel, platforms):
-            # проверка столкновения
-            # если скорость по горизонту не равна нулю
-            if x_vel != 0:
-                # столкновений по оси икс нет
-                self.collision_x_site = 0
-            # если скорость по оси игрик не равна нулю
-            elif y_vel != 0:
-                # столкновений по оси игрик нет
-                self.collision_y_site = 0
-            # проходимся по списку стен с которыми можем столкнуться
-            for pl in platforms.get_object():
-                # если столкнулись
-                if collide_rect(self, pl):
-                    # если скорость по оси икс больше 0
-                    if x_vel > 0:
-                        # правая сторона равна левой строне объекта с которым мы столкнулись
-                        self.rect.right = pl.rect.left
-                        # столкновение справа
-                        self.collision_x_site = 2
-                    # если скорость по оси икс меньше 0
-                    elif x_vel < 0:
-                        # левая сторона объекта равна правой стороне объекта
-                        self.rect.left = pl.rect.right
-                        # столкновение слева
-                        self.collision_x_site = 1
-                    # если скорость по оси игрик больше 0
-                    elif y_vel > 0:
-                        # низ объекта равен верху объекта с которым чтолкнулись
-                        self.rect.bottom = pl.rect.top
-                        # столкновение снизу
-                        self.collision_y_site = 2
-                    # если скорость по оси игрик меньше 0
-                    elif y_vel < 0:
-                        # верх объекта равен инзу объекта с котрым столкнулись
-                        self.rect.top = pl.rect.bottom
-                        # столкновение сверху
-                        self.collision_y_site = 1
-                rect = self.rect
-                self.rect = self.get_rect()
-                if collide_rect(self, pl.get_mask()):
-                    if self.rect.bottom < pl.get_mask().rect.bottom:
-                        self.set_layer(pl.get_layer() - 1)
-                    else:
-                        pl.set_layer(self.get_layer() - 1)
-                self.rect = rect
+        # проверка столкновения
+        # если скорость по горизонту не равна нулю
+        if x_vel != 0:
+            # столкновений по оси икс нет
+            self.collision_x_site = 0
+        # если скорость по оси игрик не равна нулю
+        elif y_vel != 0:
+            # столкновений по оси игрик нет
+            self.collision_y_site = 0
+        # проходимся по списку стен с которыми можем столкнуться
+        for pl in platforms:
+            # если столкнулись
+            if collide_rect(self, pl):
+                # если скорость по оси икс больше 0
+                if x_vel > 0:
+                    # правая сторона равна левой строне объекта с которым мы столкнулись
+                    self.rect.right = pl.rect.left
+                    # столкновение справа
+                    self.collision_x_site = 2
+                # если скорость по оси икс меньше 0
+                elif x_vel < 0:
+                    # левая сторона объекта равна правой стороне объекта
+                    self.rect.left = pl.rect.right
+                    # столкновение слева
+                    self.collision_x_site = 1
+                # если скорость по оси игрик больше 0
+                elif y_vel > 0:
+                    # низ объекта равен верху объекта с которым чтолкнулись
+                    self.rect.bottom = pl.rect.top
+                    # столкновение снизу
+                    self.collision_y_site = 2
+                # если скорость по оси игрик меньше 0
+                elif y_vel < 0:
+                    # верх объекта равен инзу объекта с котрым столкнулись
+                    self.rect.top = pl.rect.bottom
+                    # столкновение сверху
+                    self.collision_y_site = 1
+            rect = self.rect
+            self.rect = self.get_rect()
+            if collide_rect(self, pl.get_mask()):
+                if self.rect.bottom < pl.get_mask().rect.bottom:
+                    self.set_layer(pl.get_layer() - 1)
+                else:
+                    pl.set_layer(self.get_layer() - 1)
+            self.rect = rect
 
 
 class AnimationObject(MovingObject):
@@ -852,13 +1068,15 @@ class AnimationObject(MovingObject):
         for elem in types:
             for i in range(1, len(os.listdir(path=f'sprite/{way_to_image}/{elem}/{way_name}')) + 1):
                 if elem == 'forward':
-                    self.frames_forward.append(Image(f'sprite/{way_to_image}/{elem}/{way_name}/{way_name}_{elem}_{i}.bmp'))
+                    self.frames_forward.append(
+                        Image(f'sprite/{way_to_image}/{elem}/{way_name}/{way_name}_{elem}_{i}.bmp'))
                 if elem == 'back':
                     self.frames_back.append(Image(f'sprite/{way_to_image}/{elem}/{way_name}/{way_name}_{elem}_{i}.bmp'))
                 if elem == 'left':
                     self.frames_left.append(Image(f'sprite/{way_to_image}/{elem}/{way_name}/{way_name}_{elem}_{i}.bmp'))
                 if elem == 'right':
-                    self.frames_right.append(Image(f'sprite/{way_to_image}/{elem}/{way_name}/{way_name}_{elem}_{i}.bmp'))
+                    self.frames_right.append(
+                        Image(f'sprite/{way_to_image}/{elem}/{way_name}/{way_name}_{elem}_{i}.bmp'))
 
     def die(self, filename=None, die_frames=None):
         self.die_f = True
@@ -940,7 +1158,8 @@ class AnimationObject(MovingObject):
 
 
 class Person(AnimationObject):
-    def __init__(self, image, coord, hp, max_heal_point, food, max_food_point, name, way_to_image, way_name, armor=None):
+    def __init__(self, image, coord, hp, max_heal_point, food, max_food_point, name, way_to_image, way_name,
+                 armor=None):
         # тип объекта: Person
         super().__init__(image, coord, hp, max_heal_point, food, max_food_point, way_to_image, way_name, armor)
         self.add_type('Person')
@@ -993,21 +1212,3 @@ class EnemyBlock(Object):
 
     def attack(self, enemy):
         enemy.damage(self.damag)
-
-
-class ImageButton(Object):
-    def __init__(self, images, coord):
-        super().__init__(images, coord)
-        self.coord = coord
-        self.rect.x, self.rect.y = self.coord
-
-    def draw(self, action, screen, f=None):
-        mouse = pygame.mouse.get_pos()
-        click = pygame.mouse.get_pressed()
-        screen.blit(self.image, self.coord)
-        if self.coord[0] <= mouse[0] <= self.coord[0] + self.image.get_size()[0] \
-                and self.coord[1] <= mouse[1] <= self.coord[1] + self.image.get_size()[1] and click[0] == 1:
-            if f is not None:
-                action(screen)
-            else:
-                action()

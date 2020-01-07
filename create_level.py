@@ -74,8 +74,8 @@ class Load(Application):
         self.name_world = 'world_TEST.wrld'
         size_world = size_world[1]
         self.end_coord = (size_world[0] * 256, size_world[1] * 256)
-        #with open(self.name_world, 'w') as world:
-         #   world.write(f'{self.end_coord[0]}x{self.end_coord[1]}\n')
+        with open(self.name_world, 'w') as world:
+            world.write(f'{self.end_coord[0]}x{self.end_coord[1]}\n')
         self.size_world = size_world
         new_slow = {}
         for key, val in slow.items():
@@ -119,7 +119,7 @@ class Load(Application):
         self.bar.update_bar(self.count / (self.end_coord[1] * self.end_coord[0]))
 
 
-def make_level(slow_keys, slow, chunk_count):
+def make_level(slow, chunk_count, map_slow):
     image = load_image(REPOSITORY + 'fon 1.png')
     image = scale_to(image, (GetSystemMetrics(0), GetSystemMetrics(1)))
     bg = Widget(image, (0, 0), is_zooming=False)
@@ -143,8 +143,8 @@ def make_level(slow_keys, slow, chunk_count):
     app.add_widget(animation)
     barr.update_bar(0)
 
-    #app.run()
-    return load_level(app.name_world, slow, chunk_count[1])
+    app.run()
+    return load_level(app.name_world, slow, map_slow)
 
 
 def load_chunk(world, coord, pos):
@@ -198,13 +198,14 @@ def load_big_chunk(world, coord, pos):
     return big_chunk, big_chunk_bg
 
 
-def load_level(file, slow, size_map):
+def load_level(file, slow, map_slow):
     with open(file, 'r') as kart:
         world = kart.read()
         size, map_world = world[:world.find('\n')], world[world.find('\n') + 1:]
         size = list(map(int, size.split('x')))
     count = 0
-    size_block_on_map = 5
+    size_map = [size[0] // 256, size[1] // 256]
+    size_block_on_map = 10
     world = [[]]
     surface_map = Surface((size[0] * size_block_on_map, size[1] * size_block_on_map))
     for y, string in enumerate(map_world.split('\n')):
@@ -226,17 +227,15 @@ def load_level(file, slow, size_map):
                     else:
                         key += sumw
                 world[-1].append((slow[key_bg][int(index_bg)], slow[key][int(index)]))
-                surface_map.blit(scale_to(slow[key][int(index)][0].get_image(), [size_block_on_map] * 2), ((x + 0) * size_block_on_map, (y + 0) * size_block_on_map))
+                surface_map.blit(map_slow[key][int(index)], ((x + 0) * size_block_on_map, (y + 0) * size_block_on_map))
             else:
                 world[-1].append((slow[key_bg][int(index_bg)], None))
-                surface_map.blit(scale_to(slow[key_bg][int(index_bg)].get_image(), [size_block_on_map] * 2), ((x + 0) * size_block_on_map, (y + 0) * size_block_on_map))
+                surface_map.blit(map_slow[key_bg][int(index_bg)], ((x + 0) * size_block_on_map, (y + 0) * size_block_on_map))
         world.append([])
     pygame.image.save(surface_map, 'day.png')
     coord = [0, 0]
     pos = [0, 0]
     # размер одного блока
-    size_cell = 30
-    print(size_map)
     # список чанков с которыми объект может столкнуться
     walls_group = MainChunk()
     # список чанков на заднего фона
@@ -250,4 +249,4 @@ def load_level(file, slow, size_map):
         coord[0] = 0
         coord[1] += 7680
     # возвращаем список список чанков с которыми объект может столкнуться и список чанков на заднего фона
-    return walls_group, bg_walls_group
+    return walls_group, bg_walls_group, surface_map

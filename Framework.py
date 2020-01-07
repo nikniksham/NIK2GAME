@@ -86,13 +86,14 @@ class Application:
         return False
 
     # получить виджеты
-    def get_widgets(self, layer=None):
+    def get_widgets(self, layer=None, reverse=False):
         # получить виджеты с ключом слой
         if layer is not None:
             return self.widgets[str(layer)]
         else:
             res = []
-            for key in self.get_layers():
+            keys = sorted(self.widgets.keys(), reverse=reverse)
+            for key in keys:
                 res += self.widgets[key]
             return res
 
@@ -187,6 +188,11 @@ class Application:
             self.mouse_rect.x, self.mouse_rect.y = pygame.mouse.get_pos()
             self.screen.blit(self.mouse_image, self.mouse_rect)
 
+    def update_screen(self, width, height):
+        self.set_screen((width, height), self.get_full_screen())
+        for widget in self.get_widgets():
+            widget.set_position(width, height)
+
     # main loop
     def run(self):
         # основной цикл
@@ -234,7 +240,6 @@ class Application:
                 self.clock.tick()
             self.screen.fill(self.fill_color)
 
-
     # отрисовка экрана
     def render(self, widget):
         if issubclass(type(widget), AnimationWidgets):
@@ -256,24 +261,25 @@ class Application:
     # обработчик всех событий мыши кроме нажатия левой кнопкой мыши
     def mouse_event(self, event):
         if event.button in [4, 5]:
-            for widget in self.get_widgets():
+            for widget in self.get_widgets(reverse=True):
                 if widget.get_active() and widget.get_is_zooming():
                     widget.zoom_update(event)
         else:
-            for widget in self.get_widgets():
+            for widget in self.get_widgets(reverse=True):
                 if widget.get_active():
                     widget.update(event)
 
     # обрабатывает нажатие левой кнопкой мыши
     def on_click(self, event):
         pos = event.pos
-        for widget in self.get_widgets():
+        for widget in self.get_widgets(reverse=True):
             widget.set_active(pos)
             if widget.get_active():
                 widget.update(event)
+                break
 
     def mouse_key_up_event(self, event):
-        for widget in self.get_widgets():
+        for widget in self.get_widgets(reverse=True):
             if widget.get_active():
                 widget.update(event)
 
@@ -294,7 +300,7 @@ class Application:
 
     # события клавиатуры
     def key_pressed_event(self, event):
-        for widget in self.get_widgets():
+        for widget in self.get_widgets(reverse=True):
             if widget.get_active():
                 widget.update(event)
 
@@ -303,7 +309,7 @@ class Application:
         return key in self.pressed_key
 
     def key_up_event(self, event):
-        for widget in self.get_widgets():
+        for widget in self.get_widgets(reverse=True):
             if widget.get_active():
                 widget.update(event)
 
@@ -313,9 +319,20 @@ class Application:
 
 
 class Widget:
-    def __init__(self, surfaces, coord, active=False, is_zooming=True, zoom=1, min_zoom=0.15, is_scrolling_x=True, is_scrolling_y=True, is_scroll_line_x=False, is_scroll_line_y=False, scroll_x=0, scroll_y=0):
+    def __init__(self, surfaces, coord, active=False, is_zooming=False, zoom=1, max_zoom=1, min_zoom=0.15, is_scrolling_x=False, is_scrolling_y=False, is_scroll_line_x=False, is_scroll_line_y=False, scroll_x=0, scroll_y=0, size=None):
+        # размер экрана
+        self.size = size
+        # скролл по y
+        self.scroll_y = scroll_y
+        # скролл по x
+        self.scroll_x = scroll_x
+        # скролимый по x
+        self.is_scrolling_x = is_scrolling_x
+        # скролимый по x иил нет
+        self.is_scrolling_y = is_scrolling_y
         # программа
         self.app = None
+        self.start_zoom = zoom
         # оригинальное изоьражение
         res_surfaces = []
         if type(surfaces) == str:
@@ -329,9 +346,8 @@ class Widget:
                 else:
                     res_surfaces.append(surface)
         self.images_orig = res_surfaces
-        self.image_orig = self.images_orig[0]
-        # рабочее изображение
-        self.image = self.image_orig
+        self.set_image(self.images_orig[0])
+        self.set_zoom(self.zoom)
         # рект
         self.rect = self.image.get_rect()
         # коорданиаты
@@ -344,25 +360,21 @@ class Widget:
         # зум
         self.zoom = zoom
         self.min_zoom = min_zoom
-        # скролимый по x
-        self.is_scrolling_x = is_scrolling_x
+        self.max_zoom = max_zoom
         # есть скрол лента по x или нет
         self.is_scroll_line_x = is_scroll_line_x and is_scrolling_x
-        # скролл по x
-        self.scroll_x = scroll_x
-        # скролимый по x иил нет
-        self.is_scrolling_y = is_scrolling_y
         # есть скрол лента по y или нет
         self.is_scroll_line_y = is_scroll_line_y and is_scrolling_y
-        # скролл по y
-        self.scroll_y = scroll_y
 
     def set_image(self, image):
         self.image_orig = image
         self.image = self.image_orig
-        self.rect = image.get_rect()
-        self.set_position(self.app.get_width(), self.app.get_height())
-        self.zoom = 1
+        if self.size is not None:
+            self.image = scale_to(self.image, self.size)
+        self.rect = self.image.get_rect()
+        if self.app is not None:
+            self.set_position(self.app.get_width(), self.app.get_height())
+        self.zoom = self.start_zoom
 
     # пересчитать позицию
     def set_position(self, w, h):
@@ -403,8 +415,8 @@ class Widget:
         if self.rect.collidepoint(event.pos):
             if event.button == 5:
                 self.zoom += self.zoom * 0.1
-                if self.zoom > 1:
-                    self.zoom = 1
+                if self.zoom > self.max_zoom:
+                    self.zoom = self.max_zoom
             elif event.button == 4:
                 self.zoom -= self.zoom * 0.1
                 if self.zoom < self.min_zoom:
@@ -415,9 +427,16 @@ class Widget:
         w = self.image_orig.get_width() * zoom
         h = self.image_orig.get_height() * zoom
         w_, h_ = self.image_orig.get_size()
+        scroll_x = -self.scroll_x if self.is_scrolling_x else -((w_ - w) / 2)
+        scroll_y = -self.scroll_y if self.is_scrolling_y else -((h_ - h) / 2)
         self.image = Surface((w, h))
-        self.image.blit(self.image_orig, (-((w_ - w) / 2), -((h_ - h) / 2)))
+        self.image.blit(self.image_orig, (scroll_x, scroll_y))
         self.image = scale(self.image, (self.image_orig.get_width(), self.image_orig.get_height()))
+        if self.size is not None:
+            self.image = scale_to(self.image, self.size)
+        self.rect = self.image.get_rect()
+        if self.app is not None:
+            self.set_position(self.app.get_width(), self.app.get_height())
 
     # получить скролимый по x
     def get_is_scrolling_x(self):
@@ -459,12 +478,7 @@ class Widget:
 
     # обновить виджет
     def update(self, event):
-        if self.is_zooming:
-            pass
-        if self.is_scrolling_x:
-            pass
-        if self.is_scrolling_y:
-            pass
+        pass
 
     # получить активен ли виджет
     def get_active(self):
@@ -492,7 +506,7 @@ class Audio: None
 
 
 class Button(Widget):
-    def __init__(self, surfaces, coord, function, active=False, is_zooming=False, zoom=1, min_zoom=0.15, is_scrolling_x=True, is_scrolling_y=True, is_scroll_line_x=False, is_scroll_line_y=False, scroll_x=0, scroll_y=0):
+    def __init__(self, surfaces, coord, function, active=False, is_zooming=False, zoom=1, min_zoom=0.15, is_scrolling_x=False, is_scrolling_y=False, is_scroll_line_x=False, is_scroll_line_y=False, scroll_x=0, scroll_y=0):
         super().__init__(surfaces, coord, active, is_zooming, zoom, min_zoom, is_scrolling_x, is_scrolling_y, is_scroll_line_x, is_scroll_line_y, scroll_x, scroll_y)
         self.pressed = False
         self.function = function
@@ -509,7 +523,7 @@ class Button(Widget):
 
 
 class AnimationWidgets(Widget):
-    def __init__(self, surfaces, coord, sec, active=False, is_zooming=False, zoom=1, min_zoom=0.15, is_scrolling_x=True, is_scrolling_y=True, is_scroll_line_x=False, is_scroll_line_y=False, scroll_x=0, scroll_y=0):
+    def __init__(self, surfaces, coord, sec, active=False, is_zooming=False, zoom=1, min_zoom=0.15, is_scrolling_x=False, is_scrolling_y=False, is_scroll_line_x=False, is_scroll_line_y=False, scroll_x=0, scroll_y=0):
         super().__init__(surfaces, coord, active, is_zooming, zoom, min_zoom, is_scrolling_x, is_scrolling_y, is_scroll_line_x, is_scroll_line_y, scroll_x, scroll_y)
         self.sec = sec
         self.tick = 0
