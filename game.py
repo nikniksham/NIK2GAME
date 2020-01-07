@@ -53,11 +53,29 @@ shoot_image = ['Desert Eagle shoot 1.bmp', 'Desert Eagle shoot 2.bmp', 'Desert E
 # создаём самого героя
 hero = Player('MainHero', (35, 35), 'person_sprites', 'Player')
 
+soldier_1 = WithSomeone('Soldier_1', 'sprite/NPS_sprites/forward/NPS_soldier_1/NPS_soldier_1_forward_1.bmp', (100, 100),
+                        'NPS_sprites', 'NPS_soldier_1')
+soldier_2 = WithSomeone('Soldier_1', 'sprite/NPS_sprites/forward/NPS_soldier_1/NPS_soldier_1_forward_1.bmp', (200, 100),
+                        'NPS_sprites', 'NPS_soldier_1')
+soldier_3 = WithSomeone('Soldier_1', 'sprite/NPS_sprites/forward/NPS_soldier_1/NPS_soldier_1_forward_1.bmp', (100, 200),
+                        'NPS_sprites', 'NPS_soldier_1')
+soldier_4 = WithSomeone('Soldier_1', 'sprite/NPS_sprites/forward/NPS_soldier_1/NPS_soldier_1_forward_1.bmp', (140, 90),
+                        'NPS_sprites', 'NPS_soldier_1')
+soldier_5 = WithSomeone('Soldier_1', 'sprite/NPS_sprites/forward/NPS_soldier_1/NPS_soldier_1_forward_1.bmp', (200, 200),
+                        'NPS_sprites', 'NPS_soldier_1')
+general = WithSomeone('General', 'sprite/NPS_sprites/forward/NPS_general/NPS_general_forward_1.bmp', (500, 500),
+                      'NPS_sprites', 'NPS_general')
+spike = EnemyBlock('sprite/blocks_sprites/spike.bmp', (480, 720), 1)
+spike2 = EnemyBlock('sprite/blocks_sprites/spike.bmp', (600, 720), 1)
+spike3 = EnemyBlock('sprite/blocks_sprites/spike.bmp', (720, 720), 1)
+spike4 = EnemyBlock('sprite/blocks_sprites/spike.bmp', (840, 720), 1)
+
 # создаём сцену
 scene = Level('first_scene', hero)
 
 # добавляем чанк переднего плана
 scene.add_main_chunk(walls_group)
+
 # добавляем чанк заднего плана
 scene.add_main_chunk(bg_group)
 

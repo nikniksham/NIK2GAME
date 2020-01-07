@@ -1,6 +1,6 @@
 from MainClasss import *
 
-SPEED = 2
+SPEED = 1
 
 
 class WithSomeone(Person):
@@ -9,7 +9,7 @@ class WithSomeone(Person):
         self.name = name
         self.add_type('NPS')
         self.die_f = False
-        self.random_point = [2500, 2500]
+        self.random_point = [500, 500]
 
     def update(self, someone, platforms):
         if not self.die_f:
@@ -31,6 +31,8 @@ class WithSomeone(Person):
             self.draw()
 
     def mov_to_random_point(self, platforms):
+        self.x_vel = 0
+        self.y_vel = 0
         if not self.die_f:
             if self.get_coord()[0] > self.random_point[0]:
                 self.x_vel = -SPEED
@@ -48,6 +50,7 @@ class WithSomeone(Person):
             self.draw()
             if self.get_coord()[0] == self.random_point[0] and self.get_coord()[1] == self.random_point[1]:
                 self.random_point = [random.choice(range(5000)), random.choice(range(5000))]
+                print(self.random_point)
 
     def draw_heal_point(self, camera, screen, image):
         rect = camera.object_coord(self.rect)
