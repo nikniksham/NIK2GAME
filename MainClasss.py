@@ -322,6 +322,7 @@ class Site(MainObject):
         super().__init__()
         self.add_type('Group')
         self.add_type('Site')
+        self.objects = []
         self.builds = []
         if bot_group is not None and bot_group.is_type('BotGroup'):
             self.bots = bot_group
@@ -342,6 +343,11 @@ class Site(MainObject):
         if self.bots is not None:
             res += self.bots.get_objects()
         return res
+
+    def get_walls(self):
+        res = self.objects[:]
+        for build in self.builds:
+            res += build.get_walls()
 
 
 class MainGroup(MainObject):
@@ -422,6 +428,7 @@ class Level(MainObject):
         # добавляем тип: Level
         self.add_type('Level')
         self.main_group = MainGroup()
+        self.main_group.add_to_team(main_hero)
         # название сцены
         self.name = name
         # размер угровня
@@ -472,9 +479,14 @@ class Level(MainObject):
         res = []
         # проходимся по группам из списка групп
         res += self.main_group.get_all_objects()
+        print(len(res))
         # возвращаем результат
         return res
 
+    def get_walls(self):
+        res = self.main_group.get_walls()
+        res += self.main_chunks[0].get_object()
+        return res
 
     def get_main_hero(self):
         # возвращаем главного героя сцены
@@ -482,12 +494,10 @@ class Level(MainObject):
 
 
 class Camera(MainObject):
-    def __init__(self, size_screen, bg_color, border_map=(None, None, None, None)):
+    def __init__(self, size_screen, bg_color):
         super().__init__()
         # создаём таймер
         self.clock = pygame.time.Clock()
-        # кортеж границ сцены None если с этой стороны нет границы
-        self.border_map = border_map
         # добавляем тип Camera
         self.add_type('Camera')
         # размер экрана
@@ -496,7 +506,7 @@ class Camera(MainObject):
         self.bg_color = bg_color
         # создаём экран
         pygame.init()
-        self.screen = pygame.display.set_mode(self.size_screen, pygame.FULLSCREEN)
+        self.screen = Surface(self.size_screen)
         # координаты левого верхнего угла
         self.coord = (0, 0)
 
@@ -508,29 +518,9 @@ class Camera(MainObject):
         # получить координаты левой верхней по которым расположен экран
         return self.coord
 
-    def get_screen(self):
-        # возвращает экран
-        return self.screen
-
     def get_screen_coord(self, main_hero_coord):
         # находим левый верхний угол экрана при данном положении главного героя
-        self.coord = [main_hero_coord[0] - self.size_screen[0] // 2, main_hero_coord[1] - self.size_screen[1] // 2]
-        # проверяем границу сверху
-        if self.border_map[0] is not None:
-            if self.coord[1] < self.border_map[0]:
-                self.coord[1] = self.border_map[0]
-        # проверяем границу снизу
-        if self.border_map[1] is not None:
-            if self.coord[1] > self.border_map[1] - self.size_screen[1]:
-                self.coord[1] = self.border_map[1] - self.size_screen[1]
-        # проверяем границу слева
-        if self.border_map[2] is not None:
-            if self.coord[0] < self.border_map[2]:
-                self.coord[0] = self.border_map[2]
-        # проверяем границу справа
-        if self.border_map[3] is not None:
-            if self.coord[0] > self.border_map[3] - self.size_screen[0]:
-                self.coord[0] = self.border_map[3] - self.size_screen[0]
+        self.coord = [main_hero_coord[0] - self.size_screen[0] // 2 + 15, main_hero_coord[1] - self.size_screen[1] // 2 + 15]
 
     def create(self):
         self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
@@ -538,25 +528,6 @@ class Camera(MainObject):
     def object_coord(self, rect):
         # вычисляем координаты на экране относительно персонажа
         return rect[0] - self.coord[0], rect[1] - self.coord[1]
-
-    def draw_interface(self, hp, hp_person, food_person, coord):
-        hp_coord = coord[0]
-        food_coord = coord[1]
-        self.screen.blit(hp.get_image(), hp_coord)
-        self.screen.blit(hp.get_image(), food_coord)
-        x_t = 280 * (food_person[0] / food_person[1])
-        x_b = x_t + 20
-        pygame.draw.polygon(self.screen, (174, 108, 72), ((food_coord[0] + 2, food_coord[1] + 2),
-                                                          (food_coord[0] + x_t, food_coord[1] + 2),
-                                                          (food_coord[0] + x_b - 2, food_coord[1] + 41),
-                                                          (food_coord[0] + 20, food_coord[1] + 42)))
-        if hp_person[0] > 0:
-            x_t = 280 * (hp_person[0] / hp_person[1])
-            x_b = x_t + 20
-            pygame.draw.polygon(self.screen, (255, 0, 0), ((hp_coord[0] + 2, hp_coord[1] + 2),
-                                                           (hp_coord[0] + x_t, hp_coord[1] + 2),
-                                                           (hp_coord[0] + x_b - 2, hp_coord[1] + 41),
-                                                           (hp_coord[0] + 20, hp_coord[1] + 42)))
 
     def draw(self, level):
         # заливаем экран цветом заднего фона
@@ -611,6 +582,7 @@ class Camera(MainObject):
         # заголовк программы количество кадров в секунду и количество предметов на сцене
         # обнавляем экран
         # ограничиваем количество кадров в секунду до 120
+        return self.screen
 
 
 class Item(Object):
@@ -1026,7 +998,7 @@ class MovingObject(HealPointObject):
             # столкновений по оси игрик нет
             self.collision_y_site = 0
         # проходимся по списку стен с которыми можем столкнуться
-        for pl in platforms.get_object():
+        for pl in platforms:
             # если столкнулись
             if collide_rect(self, pl):
                 # если скорость по оси икс больше 0

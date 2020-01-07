@@ -1,8 +1,10 @@
 from create_level import *
 from player import Player
 from NPS_scripts import *
-from  import run
+from main_window import run
 
+pygame.init()
+lol = pygame.display.set_mode((10, 10))
 # загружаем нужные переменные
 load_data()
 # размер одного бока
@@ -14,25 +16,26 @@ size = 30
 chunk_count = ((0, 0), (1, 1))
 
 # camera
-camera = Camera(size_screen, (0, 0, 0),
-                border_map=(
-                    -200, chunk_count[1][1] * 16 * 16 * size + 1000, -200, chunk_count[1][0] * 16 * 16 * size + 1000))
+camera = Camera(size_screen, (0, 0, 0))
 
 # словарь картинок объектов мира
 slow = {'bn': [Image('sprite/blocks_sprites/back_1.bmp'), Image('sprite/blocks_sprites/block_3.bmp'),
                Image('sprite/blocks_sprites/back_2.bmp'), Image('sprite/blocks_sprites/back_4.bmp')],
         'tn': [(Image('sprite/blocks_sprites/tree.bmp'), 13), (Image('sprite/blocks_sprites/tree_1.bmp'), 7),
                (Image('sprite/blocks_sprites/stone_2.bmp'), None)],
-        'cn': 0.01,
-        'bs': [Image('sprite/blocks_sprites/sand_1.bmp')],
-        'ts': [(Image('sprite/blocks_sprites/stone_1.bmp'), None), (Image('sprite/blocks_sprites/Cactus_1.bmp'), None)],
-        'cs': 0.01}
+        'cn': 0.05}
+
+map_slow = {'bn': [load_image('sprite\\blocks_sprites\\map_grass.png'), load_image('sprite\\blocks_sprites\\map_grass.png'),
+               load_image('sprite\\blocks_sprites\\map_grass.png'), load_image('sprite\\blocks_sprites\\map_grass.png')],
+        'tn': [load_image('sprite\\blocks_sprites\\map_tree_1.png'), load_image('sprite\\blocks_sprites\\map_tree_2.png'),
+               load_image('sprite\\blocks_sprites\\map_stone.png')],
+        'cn': 0.05}
 
 # генерация мира
-walls_group, bg_group, image_map = make_level(slow, chunk_count)
+# walls_group, bg_group, image_map = make_level(slow, chunk_count, map_slow)
 # загрузка мира
 # не анимировано!!
-# walls_group, bg_group, image_map = load_level('world_TEST.wrld', slow)
+walls_group, bg_group, image_map = load_level('world_TEST.wrld', slow, map_slow)
 
 # загрузка картинок
 
@@ -53,10 +56,18 @@ hero = Player('MainHero', (35, 35), 'person_sprites', 'Player')
 # создаём сцену
 scene = Level('first_scene', hero)
 
-# добавляем чанк заднего плана
-scene.add_main_chunk(bg_group)
 # добавляем чанк переднего плана
 scene.add_main_chunk(walls_group)
+# добавляем чанк заднего плана
+scene.add_main_chunk(bg_group)
 
+
+def mission_1(then):
+    bots = Site()
+    for x in range(300, 600, 100):
+        bots.add_object()
+
+
+missions = [mission_1]
 # запускаем игру
-run(camera, scene, image_map)
+run(camera, scene, image_map, missions)
