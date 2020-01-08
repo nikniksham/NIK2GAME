@@ -10,7 +10,7 @@ class Game(Application):
         self.mission_index = 0
         self.camera = camera
         self.scene = scene
-        self.game_sceen = Widget(camera.draw(scene), (0, 0), zoom=0.6, is_zooming=True, min_zoom=0.3)
+        self.game_sceen = Widget(camera.draw(scene), (0, 0), zoom=1, is_zooming=False, min_zoom=0.3, stock=False)
         self.add_widget(self.game_sceen, 0)
         self.hot_keys = [pygame.K_F1, pygame.K_RETURN, pygame.K_ESCAPE]
         self.hero = scene.get_main_hero()
@@ -22,9 +22,9 @@ class Game(Application):
         if self.key_pressed(self.hot_keys[0]):
             self.camera.create()
             self.update_screen(self.widht, self.height)
-        elif self.key_pressed(self.hot_keys[1]):
-            self.mission[self.mission_index]()
-            self.mission_index += 0
+        elif self.key_pressed(self.hot_keys[1]) and self.mission_index == 0:
+            self.mission[self.mission_index](self)
+            self.mission_index += 1
         elif self.key_pressed(self.hot_keys[2]):
             self.running = False
 
@@ -40,10 +40,11 @@ class Game(Application):
         up = self.key_pressed(pygame.K_w)
         down = self.key_pressed(pygame.K_s)
         shift = self.key_pressed(pygame.K_LSHIFT) or self.key_pressed(pygame.K_RSHIFT)
-        self.hero.update(left, right, up, down, self.scene.get_walls(), shift)
+        self.hero.update(left, right, up, down, self.scene.get_walls(self.hero.get_rect()), shift)
 
     def draw_scene(self):
         self.game_sceen.set_image(self.camera.draw(self.scene))
+        self.render(0)
 
 
 def run(camera, scene, map_image, missions):

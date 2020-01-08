@@ -2,13 +2,25 @@ from MainClasss import *
 from pygame import Surface, Rect
 
 
-class ChunkImage(Surface, Sprite):
-    def __init__(self, surf, coord):
-        Sprite.__init__(self)
-        self.image = surf
-        self.coord = coord
+class ChunkObject:
+    def __init__(self, info, coord):
+        if type(info) == tuple:
+            self.image = info[0]
+            if info[1] is None:
+                self.rect = Rect((coord[0], coord[1], self.image.get_size()[0], 30))
+            else:
+                self.rect = Rect((coord[0] + self.image.get_size()[0] // 2 - info[1], coord[1], info[1] * 2, 30))
+        else:
+            self.image = info
+            self.rect = Rect((coord[0], coord[1], self.image.get_size()[0], 30))
+
+        self.coord = coord[0], coord[1] - int(self.image.get_size()[1] - 30)
+        self.types = ['object', 'Image']
         self.layer = 0
-        self.is_back_ground = True
+        self.is_back_ground = False
+
+    def get_rect(self):
+        return self.rect
 
     def set_bg(self, val: bool):
         self.is_back_ground = bool(val)
@@ -25,248 +37,92 @@ class ChunkImage(Surface, Sprite):
     def get_mask(self):
         return Wonderful(Rect(self.coord, self.image.get_size()))
 
+    def is_type(self, arg):
+        return arg in self.types
+
     def get_image(self):
         return self.image
 
     def get_coord(self):
         return self.coord
 
+    def get_coord_2(self):
+        return self.rect.x, self.rect.y
 
-class ChunkBG(Group):
-    def __init__(self, coord_lu):
-        super().__init__('sprite/blocks_sprites/Chunk.bmp')
-        coord_rd = coord_lu[0] + 480, coord_lu[1] + 480
-        self.image = Surface((480, 480))
-        # добавляем тип Chunk
-        self.add_type('ChunkBG')
-        # левая верхняя координата чанка
-        self.coord_lu = coord_lu
-        # левая нижняя координата чанка
-        self.coord_ld = (coord_lu[0], coord_rd[1])
-        # правая нижняя координата чанка
-        self.coord_rd = coord_rd
-        # правая верхняя координата чанка
-        self.coord_ru = (coord_rd[0], coord_lu[1])
-
-    def check_chunk(self, cam):
-        # проверка того что чанк на экране
-        # проверяем то что одна из четырёх крайних точек лежит между левой верхней и правой нижней точкой камеры
-        # если одна из них на экране возвращаем истину если нет лож
-        # берём координаты камеры
-        coord_cam = cam.get_coord()
-        # берём разрешение экрана
-        size_cam = cam.get_size_screen()
-        # вычисляем правую нижнюю координату камеры
-        cam_rd = (coord_cam[0] + size_cam[0], coord_cam[1] + size_cam[1])
-        # проверяем левую нижнюю координату
-        if coord_cam[0] < self.coord_ld[0] < cam_rd[0] and coord_cam[1] < self.coord_ld[1] < cam_rd[1]:
-            return True, False
-        # правую нижнюю координату
-        if coord_cam[0] < self.coord_rd[0] < cam_rd[0] and coord_cam[1] < self.coord_rd[1] < cam_rd[1]:
-            return True, False
-        # правую верхнюю координату
-        if coord_cam[0] < self.coord_ru[0] < cam_rd[0] and coord_cam[1] < self.coord_ru[1] < cam_rd[1]:
-            return True, False
-            # проверяем левую нижнюю координату
-        if coord_cam[0] < self.coord_lu[0] < cam_rd[0] and coord_cam[1] < self.coord_lu[1] < cam_rd[1]:
-            return True, True
-        # если не на экране то возвращаем лож
-        return False, False
-
-    def add_object(self, object):
-        self.image.blit(object.image, (object.rect.x % 480, object.rect.y % 480))
-
-    def check_cilision(self):
-        coords = []
-        for elem in self.objects:
-            if elem.get_coord_2() in coords:
-                self.objects.remove(elem)
-            else:
-                coords.append(elem.get_coord_2())
-
-    def get_object(self, type=None):
-        return ChunkImage(self.image, self.coord_lu)
-
-    def __str__(self):
-        return f'len: {len(self.objects)}'
+    def get_coord_3(self):
+        return self.coord[0] % 480, self.coord[1] % 480
 
 
-class Chunk(Group):
-    def __init__(self, coord_lu):
-        super().__init__('sprite/blocks_sprites/Chunk.bmp')
-        coord_rd = coord_lu[0] + 480, coord_lu[1] + 480
-        # добавляем тип Chunk
+class Chunk(MainObject):
+    def __init__(self, coord):
+        super().__init__()
         self.add_type('Chunk')
-        # левая верхняя координата чанка
-        self.coord_lu = coord_lu
-        # левая нижняя координата чанка
-        self.coord_ld = (coord_lu[0], coord_rd[1])
-        # правая нижняя координата чанка
-        self.coord_rd = coord_rd
-        # правая верхняя координата чанка
-        self.coord_ru = (coord_rd[0], coord_lu[1])
+        self.surface = Surface((480, 480))
+        self.bg_layer = Surface((480, 480))
+        self.top_layer = Surface((480, 480))
+        self.rect = Rect(coord, ((480, 480)))
+        self.objects = []
 
-    def check_chunk(self, cam):
-        # проверка того что чанк на экране
-        # проверяем то что одна из четырёх крайних точек лежит между левой верхней и правой нижней точкой камеры
-        # если одна из них на экране возвращаем истину если нет лож
-        # берём координаты камеры
-        coord_cam = cam.get_coord()
-        # берём разрешение экрана
-        size_cam = cam.get_size_screen()
-        # вычисляем правую нижнюю координату камеры
-        cam_rd = (coord_cam[0] + size_cam[0], coord_cam[1] + size_cam[1])
-        # проверяем левую нижнюю координату
-        if coord_cam[0] < self.coord_ld[0] < cam_rd[0] and coord_cam[1] < self.coord_ld[1] < cam_rd[1]:
-            return True, False
-        # правую нижнюю координату
-        if coord_cam[0] < self.coord_rd[0] < cam_rd[0] and coord_cam[1] < self.coord_rd[1] < cam_rd[1]:
-            return True, False
-        # правую верхнюю координату
-        if coord_cam[0] < self.coord_ru[0] < cam_rd[0] and coord_cam[1] < self.coord_ru[1] < cam_rd[1]:
-            return True, False
-            # проверяем левую нижнюю координату
-        if coord_cam[0] < self.coord_lu[0] < cam_rd[0] and coord_cam[1] < self.coord_lu[1] < cam_rd[1]:
-            return True, True
-        # если не на экране то возвращаем лож
-        return False, False
+    def add_object(self, info, layer, coord):
+        block = ChunkObject(info, coord)
+        if layer == 1:
+            self.objects.append(block)
+        else:
+            self.surface.blit(block.get_image(), block.get_coord_3())
 
-    def add_object(self, object):
-        self.objects.append(object)
+    def clear_chunk(self):
+        self.objects = []
 
-    def check_cilision(self):
-        coords = []
-        for elem in self.objects:
-            if elem.get_coord_2() in coords:
-                self.objects.remove(elem)
-            else:
-                coords.append(elem.get_coord_2())
+    def get_objects(self):
+        return self.objects[:]
 
-    def get_object(self, type=None):
-        return self.objects
+    def get_image(self):
+        return self.surface
 
-    def __str__(self):
-        return f'len: {len(self.objects)}'
+    def get_coord(self):
+        return self.rect.x, self.rect.y
 
 
-class BigChunk:
-    def __init__(self, coord_lu):
-        coord_rd = [coord_lu[0] + 7680, coord_lu[1] + 7680]
-        # левая верхняя координата чанка
-        self.coord_lu = coord_lu
-        # правая нижняя координата чанка
-        self.coord_rd = coord_rd
-        self.groups = []
-        # список чанков
-        self.chunks = []
-        # список блоков
-        self.res = []
-
-    def check_chunk(self, cam):
-        # проверка того что чанк на экране
-        # проверяем то что одна из четырёх крайних точек лежит между левой верхней и правой нижней точкой камеры
-        # если одна из них на экране возвращаем истину если нет лож
-        # берём координаты камеры
-        cam_lu = cam.get_coord()
-        # берём разрешение экрана
-        size_cam = cam.get_size_screen()
-        # вычисляем правую нижнюю координату камеры
-        cam_rd = (cam_lu[0] + size_cam[0], cam_lu[1] + size_cam[1])
-        # cam_ru = (cam_rd[0], cam_lu[1])
-        # cam_ld = (cam_lu[0], cam_rd[1])
-        # проверяем левую нижнюю координату
-        if self.coord_lu[0] < cam_lu[0] < self.coord_rd[0] and self.coord_lu[1] < cam_lu[1] < self.coord_rd[1]:
-            #
-            return True
-        if self.coord_lu[0] < cam_rd[0] < self.coord_rd[0] and self.coord_lu[1] < cam_rd[1] < self.coord_rd[1]:
-            #
-            return True
-        if self.coord_lu[0] < (cam_rd[0], cam_lu[1])[0] < self.coord_rd[0] and self.coord_lu[1] < (cam_rd[0], cam_lu[1])[1] < \
-                self.coord_rd[1]:
-            #
-            return True
-        if self.coord_lu[0] < (cam_lu[0], cam_rd[1])[0] < self.coord_rd[0] and self.coord_lu[1] < (cam_lu[0], cam_rd[1])[1] < \
-                self.coord_rd[1]:
-            #
-            return True
-        # если не на экране то возвращаем лож
-        return False
+class MainChunk(MainObject):
+    def __init__(self, size):
+        super().__init__()
+        self.add_type('MainChunk')
+        self.map = [[]]
+        self.size_chunk = (480, 480)
+        self.size = size
 
     def add_chunk(self, chunk):
-        self.chunks.append(chunk)
+        self.map[-1].append(chunk)
 
-    def add_group(self, big_chunk):
-        self.groups.append(big_chunk)
+    def next_string(self):
+        self.map.append([])
 
-    def is_type(self, other):
-        return bool(other)
+    def set_clear_chunk(self, rect):
+        coord = rect.x, rect.y
+        size = rect.width, rect.height
+        for y in range(coord[1] // self.size_chunk[1], (coord[1] + size[1]) // self.size_chunk[1] + 1):
+            for x in range(coord[0] // self.size_chunk[0], (coord[0] + size[0]) // self.size_chunk[0] + 1):
+                if 0 <= y < self.size[1] and 0 <= x < self.size[0]:
+                    self.map[y][x].clear_chunk()
 
-    def get_object(self, screen=None):
-        # если этот метод запустили не для проверки колизиии (пересечения)
-        if screen is not None:
-            # результат список изображений которые на сцене
-            self.res = []
-            # количество чанков которые выводятся
-            count = 0
-            # проходимся по чанкам из списка чанков
-            for chunk in self.chunks:
-                # проверяем то что чанк на экране
-                if chunk.check_chunk(screen)[0]:
-                    # добавляем 1 чанк который выводим на экран
-                    count += 1
-                    # добавляем в список избражений, изображения из чанка
-                    chunk_ = chunk.get_object()
-                    if chunk.is_type('ChunkBG'):
-                        self.res.append(chunk_)
+    def get_object(self, rect):
+        res = []
+        coord = rect.x, rect.y
+        size = rect.width, rect.height
+        for y in range(coord[1] // self.size_chunk[1], (coord[1] + size[1]) // self.size_chunk[1] + 1):
+            for x in range(coord[0] // self.size_chunk[0], (coord[0] + size[0]) // self.size_chunk[0] + 1):
+                if 0 <= y < self.size[1] and 0 <= x < self.size[0]:
+                    res += self.map[y][x].get_objects()
+        return res
 
-                    else:
-                        self.res += chunk_
-                    if chunk.check_chunk(screen)[1]:
-                        return self.res
-        # возвращаем список изображений которые на сцене
-        return self.res
-
-    def __str__(self):
-        return f'len: {len(self.chunks)}'
-
-
-class MainChunk(Object):
-    def __init__(self):
-        super().__init__('sprite/blocks_sprites/Chunk.bmp', (0, 0))
-        # добавляем тип MainChunk
-        self.add_type('MainChunk')
-        # список чанков
-        self.chunks = []
-        # список блоков
-        self.res = []
-
-    def add_chunk(self, object):
-        # добавляем чанк если он чанк
-        if object.is_type('Chunk'):
-            self.chunks.append(object)
-
-    def get_object(self, screen=None):
-        # если этот метод запустили не для проверки колизиии (пересечения)
-        if screen is not None:
-            # результат список изображений которые на сцене
-            self.res = []
-            # количество чанков которые выводятся
-            # проходимся по чанкам из списка чанков
-            for chunk in self.chunks:
-                # проверяем то что чанк на экране
-                if chunk.check_chunk(screen):
-                    self.res += chunk.get_object(screen)
-                    return self.res
-        # возвращаем список изображений которые на сцене
-        return self.res
-
-    def __add__(self, other):
-        self.chunks += other.chunks
-        self.res += other.res
-        return self
-
-    def __str__(self):
-        return f'len: {len(self.chunks)}'
-
-    def __eq__(self, other):
-        return self.chunks == other.chunks
+    def get_image(self, rect):
+        res = []
+        fon = []
+        coord = rect.x, rect.y
+        size = rect.width, rect.height
+        for y in range(coord[1] // self.size_chunk[1], (coord[1] + size[1] - 1) // self.size_chunk[1] + 1):
+            for x in range(coord[0] // self.size_chunk[0], (coord[0] + size[0] - 1) // self.size_chunk[0] + 1):
+                if 0 <= y < self.size[1] and 0 <= x < self.size[0]:
+                    res += self.map[y][x].get_objects()
+                    fon.append(self.map[y][x])
+        return res, fon

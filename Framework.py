@@ -55,6 +55,7 @@ class Application:
         self.pressed_mouse_button = []
         # виджеты ключь=слой значение [виджеты]
         self.widgets = {}
+        self.index_layers = []
         # аудио байлы
         self.audios = []
         # события функции
@@ -89,7 +90,7 @@ class Application:
     def get_widgets(self, layer=None, reverse=False):
         # получить виджеты с ключом слой
         if layer is not None:
-            return self.widgets[str(layer)]
+            return self.widgets[layer]
         else:
             res = []
             keys = sorted(self.widgets.keys(), reverse=reverse)
@@ -201,8 +202,8 @@ class Application:
             for event in pygame.event.get():
                 # событие закрытия
                 if event.type == pygame.QUIT:
-                    self.quit()
                     self.running = False
+                    return self.quit()
                 if event.type == pygame.VIDEORESIZE:
                     width, height = event.w, event.h
                     self.set_screen((width, height), self.get_full_screen())
@@ -218,11 +219,13 @@ class Application:
                     self.get_key_pressed_event(event)
                 # событие отжатия клавиши мыши
                 if event.type == pygame.MOUSEBUTTONUP:
-                    self.pressed_mouse_button.remove(event.button)
+                    if event.button in self.pressed_mouse_button:
+                        self.pressed_mouse_button.remove(event.button)
                     self.mouse_key_up_event(event)
                 # событие отжатия клавиши клавиатуры
                 if event.type == pygame.KEYUP:
-                    self.pressed_key.remove(event.key)
+                    if event.key in self.pressed_key:
+                        self.pressed_key.remove(event.key)
                     self.key_up_event(event)
             # обработка функций
             for funk in self.events:
@@ -239,6 +242,8 @@ class Application:
             else:
                 self.clock.tick()
             self.screen.fill(self.fill_color)
+        if not self.running:
+            return self.quit()
 
     # отрисовка экрана
     def render(self, widget):
@@ -319,9 +324,12 @@ class Application:
 
 
 class Widget:
-    def __init__(self, surfaces, coord, active=False, is_zooming=False, zoom=1, max_zoom=1, min_zoom=0.15, is_scrolling_x=False, is_scrolling_y=False, is_scroll_line_x=False, is_scroll_line_y=False, scroll_x=0, scroll_y=0, size=None):
+    def __init__(self, surfaces, coord, active=False, is_zooming=False, zoom=1, max_zoom=1, min_zoom=0.15, is_scrolling_x=False, is_scrolling_y=False, is_scroll_line_x=False, is_scroll_line_y=False, scroll_x=0, scroll_y=0, size=None, stock=True):
         # размер экрана
         self.size = size
+        # зум
+        self.zoom = zoom
+        self.stock = stock
         # скролл по y
         self.scroll_y = scroll_y
         # скролл по x
@@ -347,7 +355,6 @@ class Widget:
                     res_surfaces.append(surface)
         self.images_orig = res_surfaces
         self.set_image(self.images_orig[0])
-        self.set_zoom(self.zoom)
         # рект
         self.rect = self.image.get_rect()
         # коорданиаты
@@ -357,8 +364,6 @@ class Widget:
         self.active = active
         # зумируемый
         self.is_zooming = is_zooming
-        # зум
-        self.zoom = zoom
         self.min_zoom = min_zoom
         self.max_zoom = max_zoom
         # есть скрол лента по x или нет
@@ -374,7 +379,10 @@ class Widget:
         self.rect = self.image.get_rect()
         if self.app is not None:
             self.set_position(self.app.get_width(), self.app.get_height())
-        self.zoom = self.start_zoom
+        if self.stock:
+            self.zoom = self.start_zoom
+        if self.zoom != 1:
+            self.set_zoom(zoom=self.zoom)
 
     # пересчитать позицию
     def set_position(self, w, h):

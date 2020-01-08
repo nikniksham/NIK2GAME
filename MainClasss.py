@@ -3,6 +3,7 @@ import random
 from pygame.sprite import Sprite, collide_rect
 from pygame import image, Rect, Surface
 import math
+from Framework import load_image
 import os
 
 
@@ -256,7 +257,7 @@ class BotGroup(MainObject):
         for bot in bots:
             if bot.is_type('NPS'):
                 self.bots.append(bot)
-                self.bots.add_group(self)
+                bot.add_group(self)
 
     def remove_bot(self, bot):
         if bot in self.bots:
@@ -268,13 +269,16 @@ class BotGroup(MainObject):
     def get_objects(self):
         return self.bots[:]
 
-    def update(self, main_group):
-        pass
+    def update(self, objects, main_group):
+        bots = self.get_objects()
+        for bot in bots:
+            bot.update(bots[:], objects, main_group)
 
 
 class Build(Object):
     def __init__(self, coord, image_out, image_in=None, door_rect=None):
         super().__init__(image_out, coord)
+        self.rect = Rect((coord[0], coord[1] + 20), (self.image.get_size()[0], self.image.get_size()[1] - 20))
         self.in_hom = False
         if image_in is not None and door_rect is not None:
             self.can_join = True
@@ -298,6 +302,12 @@ class Build(Object):
             return True
         return False
 
+    def get_coord(self):
+        return self.rect.x, self.rect.y - 20
+
+    def get_rect(self):
+        return Rect(self.get_coord(), self.image.get_size())
+
     def set_in_hom(self, in_hom: bool):
         if self.can_join:
             self.in_hom = bool(in_hom)
@@ -315,6 +325,10 @@ class Build(Object):
             res.append(self.down_wall_rerct)
         else:
             res.append(self)
+        return res
+
+    def update(self, objects, main_chunk):
+        pass
 
 
 class Site(MainObject):
@@ -348,6 +362,13 @@ class Site(MainObject):
         res = self.objects[:]
         for build in self.builds:
             res += build.get_walls()
+        return res
+
+    def update(self, objects, main_chunk):
+        for build in self.builds:
+            build.update(objects, main_chunk)
+        if self.bots is not None:
+            self.bots.update(objects, main_chunk)
 
 
 class MainGroup(MainObject):
@@ -372,10 +393,13 @@ class MainGroup(MainObject):
             return True
         return False
 
-    def get_all_objects(self):
+    def get_all_objects(self, person=True):
         res = self.all_objects[:]
         res += self.get_bots()
-        res += self.team[:]
+        if person:
+            res += self.team[:]
+        else:
+            res += self.team[1:]
         for site in self.sites:
             res += site.get_objects()
         return res
@@ -383,7 +407,7 @@ class MainGroup(MainObject):
     def get_walls(self):
         res = self.all_objects[:]
         for site in self.sites:
-            res += site.get_wall()
+            res += site.get_walls()
         return res
 
     def get_bots(self, type=None):
@@ -420,10 +444,33 @@ class MainGroup(MainObject):
     def get_sites(self):
         return self.sites
 
+    def get_to_update(self, group):
+        res = self.get_all_objects()
+        for elem in group:
+            res.remove(elem)
+        return res
+
+    def get_bot_groups(self):
+        return self.bots
+
+    def update(self, main_chunk):
+        for bullet in self.bullets:
+            objects = self.get_to_update([bullet])
+            bullet.update(objects, main_chunk)
+        for group in self.get_bot_groups():
+            objects = self.get_to_update(group.get_objects())
+            group.update(objects, main_chunk)
+        objects = self.get_all_objects()
+        for bot in self.team[1:]:
+            bot.update(objects[:], main_chunk)
+        for site in self.get_sites():
+            site.update(objects[:], main_chunk)
+
 
 class Level(MainObject):
-    def __init__(self, name, main_hero):
-        self.main_chunks = []
+    def __init__(self, name, main_hero, main_chunk):
+        self.main_chunk = ''
+        self.add_main_chunk(main_chunk)
         super().__init__()
         # добавляем тип: Level
         self.add_type('Level')
@@ -437,32 +484,23 @@ class Level(MainObject):
     def add_main_chunk(self, main_chunk):
         # если объект типа МainChunk то он нам подходит возвращаем истину в противоположном случае лож
         if main_chunk.is_type('MainChunk'):
-            self.main_chunks.append(main_chunk)
+            self.main_chunk = main_chunk
             return True
         return False
 
-    def remove_main_chunk(self, main_chunk):
-        # удаляем объект из группы если он в группе и возвращаем истину в ином случае лож
-        if main_chunk in self.main_chunks:
-            self.main_chunks.remove(main_chunk)
-            return True
-        return False
+    def get_map_images_objects(self, object):
+        return self.main_chunk.get_image(object.get_rect())[0]
 
-    def get_main_chunks(self, screen):
-        # получить изображения из чанков которые на экране
-        # список результата
-        res = []
-        # проходимся по основным чанкам и находим изображения которые надо вывести
-        for chunk in self.main_chunks:
-            # добавляем в список результата объекты которые находятся на сцене
-            res += chunk.get_object(screen)
-        # возвращаем результат
-        return res
+    def get_map_images_fon(self, object):
+        return self.main_chunk.get_image(object.get_rect())[1]
+
+    def get_objects(self, objects):
+        return self.main_chunk.get_object(objects.get_rect())
 
     def get_bots(self, type=None):
         return self.main_group.get_bots(type)
 
-    def add_bots_group(self, group):
+    def add_bot_group(self, group):
         return self.main_group.add_bot_group(group)
 
     def remove_bots_group(self, group):
@@ -474,23 +512,27 @@ class Level(MainObject):
     def remove_site(self, site):
         return self.main_group.remove_site(site)
 
-    def get_object(self):
+    def get_object(self, object):
         # создаём список в который сохраняем результат
         res = []
         # проходимся по группам из списка групп
         res += self.main_group.get_all_objects()
-        print(len(res))
+        print(f'объекты сцены: {len(res)}')
+        res += self.get_map_images_objects(object)
         # возвращаем результат
         return res
 
-    def get_walls(self):
+    def get_walls(self, object):
         res = self.main_group.get_walls()
-        res += self.main_chunks[0].get_object()
+        res += self.main_chunk.get_object(object)
         return res
 
     def get_main_hero(self):
         # возвращаем главного героя сцены
         return self.main_hero
+
+    def update(self):
+        self.main_group.update(self.main_chunk)
 
 
 class Camera(MainObject):
@@ -510,6 +552,9 @@ class Camera(MainObject):
         # координаты левого верхнего угла
         self.coord = (0, 0)
 
+    def get_rect(self):
+        return Rect(self.get_coord(), self.get_size_screen())
+
     def get_size_screen(self):
         # получить размер экрана
         return self.size_screen
@@ -525,56 +570,35 @@ class Camera(MainObject):
     def create(self):
         self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 
-    def object_coord(self, rect):
+    def object_coord(self, coord):
         # вычисляем координаты на экране относительно персонажа
-        return rect[0] - self.coord[0], rect[1] - self.coord[1]
+        return coord[0] - self.coord[0], coord[1] - self.coord[1]
 
     def draw(self, level):
         # заливаем экран цветом заднего фона
         self.screen.fill(self.bg_color)
         # находим левый верхний угол экрана при данном положении главного героя
         self.get_screen_coord(level.get_main_hero().get_rect())
-        # количетсво элементов
+        level.update()
         count = 0
-        layer = {}
-        # выводим объекты из чанков
-        for object in level.get_main_chunks(self):
-            if str(type(object)) == '<class \'Chunk.ChunkImage\'>':
-                # количетсво объектов на 1 обльше
-                count += 1
-                # выводим на экран объект
-                self.screen.blit(object.get_image(), self.object_coord(object.get_coord()))
-        # проходимся по объектам не сцене
-        for object in level.get_object():
-            # количетсво объектов на 1 обльше
-            # и выводим из на дисплей отнасительно главного героя
-            if object.get_is_bg():
-                count += 1
-                self.screen.blit(object.get_image(), self.object_coord(object.get_coord()))
+        for image in level.get_map_images_fon(self):
+            count += 1
+            self.screen.blit(image.get_image(), self.object_coord(image.get_coord()))
+
+        layers = {}
+        keys = []
+        for object in level.get_object(self):
+            if object.get_layer() not in layers:
+                keys.append(object.get_layer())
+                layers[object.get_layer()] = [object]
             else:
-                if object.get_layer() in layer:
-                    layer[object.get_layer()].append(object)
-                else:
-                    layer[object.get_layer()] = [object]
-        for object in level.get_main_chunks(self):
-            if str(type(object)) != '<class \'Chunk.ChunkImage\'>':
-                # количетсво объектов на 1 обльше
-                # выводим на экран объект
-                if object.get_is_bg():
-                    count += 1
-                    self.screen.blit(object.get_image(), self.object_coord(object.get_coord()))
-                else:
-                    if object.get_layer() in layer:
-                        layer[object.get_layer()].append(object)
-                    else:
-                        layer[object.get_layer()] = [object]
-        layers = list(layer.keys())
-        layers.sort()
-        for key in layers:
-            for object in layer[key]:
+                layers[object.get_layer()].append(object)
+        keys.sort()
+        for key in keys:
+            for object in layers[key]:
                 count += 1
                 self.screen.blit(object.get_image(), self.object_coord(object.get_coord()))
-        print(count)
+        print(f'отрисовывается {count} объектов')
         # обнавляем экран
         # poop = draw.circle(self.screen, (255, 0, 0), (self.size_screen[0] // 2, self.size_screen[1] // 2), 15)
         # line_1 = draw.line(self.screen, (0, 0, 0), (0, 0), (self.size_screen[0], self.size_screen[1]), 5)
@@ -1029,9 +1053,9 @@ class MovingObject(HealPointObject):
             self.rect = self.get_rect()
             if collide_rect(self, pl.get_mask()):
                 if self.rect.bottom < pl.get_mask().rect.bottom:
-                    self.set_layer(pl.get_layer() - 1)
+                    pl.set_layer(self.get_layer() + 1)
                 else:
-                    pl.set_layer(self.get_layer() - 1)
+                    self.set_layer(pl.get_layer() + 1)
             self.rect = rect
 
 
@@ -1206,9 +1230,15 @@ class EnemyBlock(Object):
         super().__init__(filename, coord)
         self.damag = damag
         self.add_type('enemy_spike')
+        self.add_type('NPS')
         self.negative_effect = negative_effect
         self.coord = coord
         self.set_bg(True)
+
+    def update(self, bots, objects, main_group):
+        for object in objects:
+            if self.rect.colliderect(object.get_rect()) and object.is_type('HealPointObject'):
+                self.attack(object)
 
     def attack(self, enemy):
         enemy.damage(self.damag)
