@@ -257,28 +257,28 @@ class BotGroup(MainObject):
         for bot in bots:
             if bot.is_type('NPS'):
                 self.bots.append(bot)
-                bot.add_group(self)
 
     def remove_bot(self, bot):
         if bot in self.bots:
             self.bots.remove(bot)
-            bot.remove_group()
             return True
         return False
 
     def get_objects(self):
         return self.bots[:]
 
-    def update(self, objects, main_group):
+    def update(self, objects, main_group, camera):
         bots = self.get_objects()
         for bot in bots:
-            bot.update(bots[:], objects, main_group)
+            bot.update(bots[:], objects, main_group, camera)
+            if bot.die_tick >= 600:
+                self.remove_bot(bot)
 
 
 class Build(Object):
     def __init__(self, coord, image_out, image_in=None, door_rect=None):
         super().__init__(image_out, coord)
-        self.rect = Rect((coord[0], coord[1] + 20), (self.image.get_size()[0], self.image.get_size()[1] - 20))
+        self.rect = Rect((coord[0], coord[1] + 10), (self.image.get_size()[0], self.image.get_size()[1] - 10))
         self.in_hom = False
         if image_in is not None and door_rect is not None:
             self.can_join = True
@@ -303,7 +303,7 @@ class Build(Object):
         return False
 
     def get_coord(self):
-        return self.rect.x, self.rect.y - 20
+        return self.rect.x, self.rect.y - 10
 
     def get_rect(self):
         return Rect(self.get_coord(), self.image.get_size())
@@ -327,7 +327,7 @@ class Build(Object):
             res.append(self)
         return res
 
-    def update(self, objects, main_chunk):
+    def update(self, objects, main_chunk, camera):
         pass
 
 
@@ -364,11 +364,11 @@ class Site(MainObject):
             res += build.get_walls()
         return res
 
-    def update(self, objects, main_chunk):
+    def update(self, objects, main_chunk, camera):
         for build in self.builds:
-            build.update(objects, main_chunk)
+            build.update(objects, main_chunk, camera)
         if self.bots is not None:
-            self.bots.update(objects, main_chunk)
+            self.bots.update(objects, main_chunk, camera)
 
 
 class MainGroup(MainObject):
@@ -396,6 +396,7 @@ class MainGroup(MainObject):
     def get_all_objects(self, person=True):
         res = self.all_objects[:]
         res += self.get_bots()
+        res += self.bullets[:]
         if person:
             res += self.team[:]
         else:
@@ -409,6 +410,24 @@ class MainGroup(MainObject):
         for site in self.sites:
             res += site.get_walls()
         return res
+
+    def get_bullets(self):
+        return self.bullets
+
+    def add_bullet(self, bullet):
+        self.bullets.append(bullet)
+
+    def remove_bullet(self, bullet):
+        self.bullets.remove(bullet)
+
+    def add_object(self, object):
+        self.all_objects.append(object)
+
+    def remove_object(self, object):
+        self.all_objects.remove(object)
+
+    def get_objects(self):
+        return self.all_objects
 
     def get_bots(self, type=None):
         res = []
@@ -444,27 +463,31 @@ class MainGroup(MainObject):
     def get_sites(self):
         return self.sites
 
-    def get_to_update(self, group):
+    def get_to_update(self, *groups):
         res = self.get_all_objects()
-        for elem in group:
-            res.remove(elem)
+        for group in groups:
+            for elem in group:
+                res.remove(elem)
         return res
 
     def get_bot_groups(self):
         return self.bots
 
-    def update(self, main_chunk):
+    def update(self, main_chunk, camera):
+        # qwerty
         for bullet in self.bullets:
-            objects = self.get_to_update([bullet])
-            bullet.update(objects, main_chunk)
+            objects = self.get_to_update(self.bullets, self.team)
+            res = bullet.update(objects, main_chunk)
+            if res:
+                self.remove_bullet(bullet)
         for group in self.get_bot_groups():
-            objects = self.get_to_update(group.get_objects())
-            group.update(objects, main_chunk)
+            objects = self.get_to_update(group.get_objects(), self.bullets)
+            group.update(objects, main_chunk, camera)
         objects = self.get_all_objects()
         for bot in self.team[1:]:
-            bot.update(objects[:], main_chunk)
+            bot.update(objects[:], main_chunk, camera)
         for site in self.get_sites():
-            site.update(objects[:], main_chunk)
+            site.update(objects[:], main_chunk, camera)
 
 
 class Level(MainObject):
@@ -488,6 +511,12 @@ class Level(MainObject):
             return True
         return False
 
+    def add_bullet(self, bullet):
+        self.main_group.add_bullet(bullet)
+
+    def remove_bullet(self, bullet):
+        self.main_group.remove_bullet(bullet)
+
     def get_map_images_objects(self, object):
         return self.main_chunk.get_image(object.get_rect())[0]
 
@@ -506,6 +535,12 @@ class Level(MainObject):
     def remove_bots_group(self, group):
         return self.main_group.remove_bots_group(group)
 
+    def add_object(self, object):
+        self.main_group.add_object(object)
+
+    def remove_object(self, object):
+        self.main_group.remove_object(object)
+
     def add_site(self, site):
         return self.main_group.add_site(site)
 
@@ -517,7 +552,7 @@ class Level(MainObject):
         res = []
         # проходимся по группам из списка групп
         res += self.main_group.get_all_objects()
-        print(f'объекты сцены: {len(res)}')
+        # print(f'объекты сцены: {len(res)}')
         res += self.get_map_images_objects(object)
         # возвращаем результат
         return res
@@ -531,8 +566,8 @@ class Level(MainObject):
         # возвращаем главного героя сцены
         return self.main_hero
 
-    def update(self):
-        self.main_group.update(self.main_chunk)
+    def update(self, camera):
+        self.main_group.update(self.main_chunk, camera)
 
 
 class Camera(MainObject):
@@ -579,7 +614,7 @@ class Camera(MainObject):
         self.screen.fill(self.bg_color)
         # находим левый верхний угол экрана при данном положении главного героя
         self.get_screen_coord(level.get_main_hero().get_rect())
-        level.update()
+        level.update(self)
         count = 0
         for image in level.get_map_images_fon(self):
             count += 1
@@ -598,7 +633,7 @@ class Camera(MainObject):
             for object in layers[key]:
                 count += 1
                 self.screen.blit(object.get_image(), self.object_coord(object.get_coord()))
-        print(f'отрисовывается {count} объектов')
+        # print(f'отрисовывается {count} объектов')
         # обнавляем экран
         # poop = draw.circle(self.screen, (255, 0, 0), (self.size_screen[0] // 2, self.size_screen[1] // 2), 15)
         # line_1 = draw.line(self.screen, (0, 0, 0), (0, 0), (self.size_screen[0], self.size_screen[1]), 5)
@@ -796,9 +831,10 @@ class Armor(Item):
 
 
 class Bullet(Item):
-    def __init__(self, image, coord, name, max_count, type_bullet, x_vel=None, y_vel=None, attack_radius=None, info=''):
+    def __init__(self, image, coord, name, max_count, type_bullet, weapon, x_vel=None, y_vel=None, attack_radius=None, info=''):
         super().__init__(image, coord, name, max_count, info)
         # добавляем тип: Bullet
+        self.weapon = weapon
         self.coord = coord
         self.attack_radius = attack_radius
         self.start_pos = coord[:]
@@ -816,28 +852,34 @@ class Bullet(Item):
         # возвращает тип снаряда
         return self.type_bullet
 
-    def bullet_move(self, mask_sprites, person_sprites, weapon):
+    def update(self, objects, main_chunk):
+        # qwerty
         self.coord[0] += self.x_vel
         self.coord[1] += self.y_vel
         self.rect.x, self.rect.y = self.coord
-        if get_gipotinuza(self.coord, self.start_pos) >= self.attack_radius or \
-                pygame.sprite.spritecollide(self, mask_sprites, False, False):
+        if get_gipotinuza(self.coord, self.start_pos) >= self.attack_radius:
             return True
-        for elem in person_sprites:
-            if elem.get_rect().colliderect(self.rect):
-                if elem.is_type('NPS'):
-                    weapon.damage(elem)
+        for object in objects:
+            if self.rect.colliderect(object.get_rect()):
+                if object.is_type('HealPointObject'):
+                    if object.die_f:
+                        continue
+                    else:
+                        self.weapon.damage(object)
+                if not object.is_type('Weapon'):
                     return True
+        for object in main_chunk.get_object(self.rect):
+            if self.rect.colliderect(object.get_rect()):
+                return True
         return False
 
 
 class Weapon(Bullet):
     def __init__(self, image, coord, name, max_count, type_bullet, type_damage, attack_radius,
-                 range_damage, attack_speed, accuracy, owner, info=''):
+                 range_damage, attack_speed, owner, info=''):
         # тип объекта: Weapon
         super().__init__(image, coord, name, max_count, type_bullet, info)
         self.add_type('Weapon')
-        self.bullet = 0
         # типы урона: knife, firearm, missile, ret_damage
         self.type_damage = type_damage
         # Дальность атаки
@@ -847,35 +889,35 @@ class Weapon(Bullet):
         # скорость атаки
         self.attack_speed = attack_speed
         # точность оружия
-        self.accuracy = accuracy
         # Владелец
         self.owner = owner
 
-    def spawn_bullet(self, camera, hero, image, bullet):
+    def shoot(self, camera, shoot_bool:bool, hero, image, scene):
+        shoot_f = shoot_bool
+        angle = 0
+        if shoot_f:
+            if hero.weapon.shoot_delay(scene):
+                hero.weapon.count_shoot += 1
+                hero.weapon.tick = 0
+                angle = hero.weapon.spawn_bullet(camera, hero, image, scene)
+        else:
+            hero.weapon.shoot_delay(scene)
+        hero.weapon.set_coord([hero.get_coord()[0] - 3, hero.get_coord()[1] + 7])
+        hero.weapon.rotate_image(angle)
+
+    def spawn_bullet(self, camera, hero, image, scene):
         self.bullet += 1
         mouse_x, mouse_y = pygame.mouse.get_pos()
         coord_person = camera.object_coord(hero.get_coord())
         mouse_x -= 5
         mouse_y -= 10
         coord = hero.get_coord()
-        sin, cos = hero.weapon.flight_path([mouse_x, mouse_y], coord_person)
+        sin, cos, rad = hero.weapon.flight_path([mouse_x, mouse_y], coord_person)
+        angle = int(rad * 180 / math.pi)
         x_vel, y_vel = 10 * cos, 10 * sin
         # print(self.bullet, 'пуля')
-        bullet.add_object(
-            Bullet(image, [coord[0] + 5, coord[1] + 10], 'bullet', 10, 'standard', x_vel, y_vel, self.attack_radius))
-
-    def bullets_move(self, bullets, level, screen, weapon):
-        person_sprites = []
-        mask_sprites = pygame.sprite.Group()
-        for elem in level.get_object():
-            if not elem.get_is_bg():
-                person_sprites.append(elem)
-        for elem in level.get_main_chunks(screen):
-            if str(type(elem)) != '<class \'Chunk.ChunkImage\'>':
-                Tile(elem.get_rect(), mask_sprites)
-        for bullet in bullets.get_object():
-            if bullet.bullet_move(mask_sprites, person_sprites, weapon):
-                bullets.remove(bullet)
+        scene.add_bullet(Bullet(image, [coord[0] + 5, coord[1] + 10], 'bullet', 10, 'standard', hero.weapon, x_vel, y_vel, self.attack_radius))
+        return angle
 
     def get_bullet_count(self):
         # идём в инвентарь берём патроны и возвращаем количество патронов нужного типа
@@ -893,11 +935,7 @@ class Weapon(Bullet):
         rad = math.atan2(m_y - y, m_x - x)
         sin = math.sin(rad)
         cos = math.cos(rad)
-        return sin, cos
-
-    def get_accuracy(self):
-        # возвращает точность оружия (десятичное число, самая лучшая точность ---> 1.0)
-        return self.accuracy
+        return sin, cos, rad
 
 
 class Tile(pygame.sprite.Sprite):
@@ -1060,7 +1098,8 @@ class MovingObject(HealPointObject):
 
 
 class AnimationObject(MovingObject):
-    def __init__(self, images, coord, hp, max_heal_point, food, max_food_point, way_to_image, way_name, armor=None):
+    def __init__(self, images, coord, hp, max_heal_point, food, max_food_point, way_to_image, way_name, armor=None,
+                 type='bmp'):
         self.die_f = False
         super().__init__(images, coord, hp, max_heal_point, armor, food, max_food_point)
         self.add_type('AnimationObject')
@@ -1093,14 +1132,14 @@ class AnimationObject(MovingObject):
             for i in range(1, len(os.listdir(path=f'sprite/{way_to_image}/{elem}/{way_name}')) + 1):
                 if elem == 'forward':
                     self.frames_forward.append(
-                        Image(f'sprite/{way_to_image}/{elem}/{way_name}/{way_name}_{elem}_{i}.bmp'))
+                        Image(f'sprite/{way_to_image}/{elem}/{way_name}/{way_name}_{elem}_{i}.{type}'))
                 if elem == 'back':
-                    self.frames_back.append(Image(f'sprite/{way_to_image}/{elem}/{way_name}/{way_name}_{elem}_{i}.bmp'))
+                    self.frames_back.append(Image(f'sprite/{way_to_image}/{elem}/{way_name}/{way_name}_{elem}_{i}.{type}'))
                 if elem == 'left':
-                    self.frames_left.append(Image(f'sprite/{way_to_image}/{elem}/{way_name}/{way_name}_{elem}_{i}.bmp'))
+                    self.frames_left.append(Image(f'sprite/{way_to_image}/{elem}/{way_name}/{way_name}_{elem}_{i}.{type}'))
                 if elem == 'right':
                     self.frames_right.append(
-                        Image(f'sprite/{way_to_image}/{elem}/{way_name}/{way_name}_{elem}_{i}.bmp'))
+                        Image(f'sprite/{way_to_image}/{elem}/{way_name}/{way_name}_{elem}_{i}.{type}'))
 
     def die(self, filename=None, die_frames=None):
         self.die_f = True
@@ -1183,9 +1222,9 @@ class AnimationObject(MovingObject):
 
 class Person(AnimationObject):
     def __init__(self, image, coord, hp, max_heal_point, food, max_food_point, name, way_to_image, way_name,
-                 armor=None):
+                 armor=None, type='bmp'):
         # тип объекта: Person
-        super().__init__(image, coord, hp, max_heal_point, food, max_food_point, way_to_image, way_name, armor)
+        super().__init__(image, coord, hp, max_heal_point, food, max_food_point, way_to_image, way_name, armor, type)
         self.add_type('Person')
         self.name = name
         # имя персонажа
@@ -1235,7 +1274,7 @@ class EnemyBlock(Object):
         self.coord = coord
         self.set_bg(True)
 
-    def update(self, bots, objects, main_group):
+    def update(self, bots, objects, main_group, camera):
         for object in objects:
             if self.rect.colliderect(object.get_rect()) and object.is_type('HealPointObject'):
                 self.attack(object)

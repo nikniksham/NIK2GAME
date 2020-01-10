@@ -13,10 +13,13 @@ class Game(Application):
         self.game_sceen = Widget(camera.draw(scene), (0, 0), zoom=1, is_zooming=False, min_zoom=0.3, stock=False)
         self.add_widget(self.game_sceen, 0)
         self.hot_keys = [pygame.K_F1, pygame.K_RETURN, pygame.K_ESCAPE]
+        self.draw_frs = Text('0', 30, (-10, 10))
+        self.add_widget(self.draw_frs, 2)
         self.hero = scene.get_main_hero()
         self.add_event(self.hero_update)
         self.add_event(self.draw_scene)
         self.add_event(self.funks)
+        self.add_event(self.update_interface)
 
     def funks(self):
         if self.key_pressed(self.hot_keys[0]):
@@ -29,11 +32,13 @@ class Game(Application):
             self.running = False
 
     def update_interface(self):
-        pass
+        self.draw_frs.update_text(text=str(int(self.clock.get_fps())))
 
     def hero_update(self):
         # стрельба
-
+        if self.hero.weapon is not None:
+            self.hero.weapon.shoot(self.camera, self.mouse_pressed(1), self.hero, 'sprite/bullets/standard_bullet.bmp',
+                                   self.scene)
         # ходьба и бег
         left = self.key_pressed(pygame.K_a)
         right = self.key_pressed(pygame.K_d)

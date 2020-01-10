@@ -600,8 +600,6 @@ class ProgressBar(AnimationWidgets):
             self.display.update_text(f'{int(self.percentage * 100)}%', color=self.get_color())
 
 
-
-
 class Text(Widget):
     def __init__(self, text, size, coord, color=(255, 255, 255)):
         text_image = create_text(text, size, color)
