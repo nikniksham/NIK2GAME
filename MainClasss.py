@@ -174,6 +174,43 @@ class Image(MainObject, Sprite):
         return self.rect
 
 
+class Animation(Image):
+    def __init__(self, way, speed, coord=(0, 0), color_key=(255, 255, 255)):
+        files = list(os.walk(way))[0][-1]
+        self.images = []
+        for elem in files:
+            self.images.append(Image(way + elem, transpote_color=color_key).get_image())
+        super().__init__(self.images[0], transpote_color=color_key, coord=coord)
+        self.frame = 0
+        self.to_next_frame = 0
+        self.speed = speed
+
+    def update(self, *args):
+        self.to_next_frame += 1
+        if self.to_next_frame >= self.speed:
+            self.frame += 1
+            if self.frame >= len(self.images) - 1:
+                self.frame = 0
+            self.to_next_frame = 0
+
+    def get_image(self):
+        return self.images[self.frame]
+
+    def set_frame(self, index=0):
+        if -1 < index < len(self.images):
+            self.frame = index
+        else:
+            print('Ты скорее всего ошибся на еденицу)')
+            quit()
+
+    def set_speed(self, speed):
+        if speed > 0:
+            self.speed = speed
+        else:
+            print('Почему скорость отрицительная?')
+            quit()
+
+
 class Object(Image):
     def __init__(self, image, coord, transpote_color=(255, 255, 255)):
         if type(image) == str:
