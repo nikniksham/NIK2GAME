@@ -42,8 +42,8 @@ image_map, main_chunk = load_level('world_TEST.wrld', slow, map_slow)
 group_helper = GroupHelper()
 # создаём самого героя
 zombie_group = BotGroup('enemy', 'Зомби')
-hero = Player('MainHero', (35, 35), 'person_sprites', 'Player')
 
+hero = Player('MainHero', (35, 35), 'person_sprites', 'Player')
 # создаём сцену
 scene = Level('first_scene', hero, main_chunk, camera)
 
@@ -92,12 +92,15 @@ class Missions:
         site_1.add_object(bonfire)
         print(then.scene.add_site(site_1))
 
+    def get_group(self):
+        return zombie_group
+
     def wave(self, count, then):
         group_helper.summon(zombie_group, ['Zombie', 'sprite/Enemy_sprites/forward/Zombie/Zombie_forward_1.png',
                                            hero.get_coord(), 'Enemy_sprites', 'Zombie', 10, hero, None, 'png'], count)
-        print(then.scene.add_bot_group(zombie_group))
-        self.summon_f = True
-        return zombie_group
+        if not self.summon_f:
+            self.summon_f = True
+            then.scene.add_bot_group(zombie_group)
 
 
 # запускаем игру

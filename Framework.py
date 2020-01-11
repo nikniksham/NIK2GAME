@@ -65,7 +65,7 @@ class Application:
         # часы для граничения FPS
         self.clock = pygame.time.Clock()
         # количество кадров в секунду 0 - неограничено
-        self.FPS = 80
+        self.FPS = 90
         # приложение работает
         self.running = True
         # картинка мыши если None то обычная мышь
@@ -149,6 +149,12 @@ class Application:
     def add_event(self, event):
         # добавляем событие выполняется каждую итерацию
         self.events.append(event)
+
+    def remove_event(self, event):
+        if event in self.events:
+            self.add_event(event)
+            return True
+        return False
 
     # получить размер экрана
     def get_size_screen(self):
@@ -236,6 +242,7 @@ class Application:
                         self.pressed_key.remove(event.key)
                     self.key_up_event(event)
             # обработка функций
+            # print(len(self.events))
             for funk in self.events:
                 funk()
             # отрисовка экрана
@@ -304,10 +311,8 @@ class Application:
                 widget.set_active(pos)
             if widget.get_active() and not good:
                 good = True
-                print(widget.rect)
+                # print(widget.rect)
                 widget.update(event)
-
-
 
     # проверить нажата ли кнопка мыши
     def mouse_pressed(self, number_mouse):
