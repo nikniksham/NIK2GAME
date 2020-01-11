@@ -90,11 +90,11 @@ class Missions:
         print(then.scene.add_site(site_1))
 
     def wave(self, count, then):
-        if not self.summon_f:
-            group_helper.summon(zombie_group, ['Zombie', 'sprite/Enemy_sprites/forward/Zombie/Zombie_forward_1.png',
-                                               hero.get_coord(), 'Enemy_sprites', 'Zombie', 10, hero, None, 'png'], count)
-            print(then.scene.add_bot_group(zombie_group))
-            self.summon_f = True
+        group_helper.summon(zombie_group, ['Zombie', 'sprite/Enemy_sprites/forward/Zombie/Zombie_forward_1.png',
+                                           hero.get_coord(), 'Enemy_sprites', 'Zombie', 10, hero, None, 'png'], count)
+        print(then.scene.add_bot_group(zombie_group))
+        self.summon_f = True
+        return zombie_group
 
 
 # запускаем игру

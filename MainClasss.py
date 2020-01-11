@@ -601,10 +601,12 @@ class MainGroup(MainObject):
     def get_bot_groups(self):
         return self.bots
 
-    def update(self, main_chunk, camera):
-        # qwerty
+    def button_update(self):
         for button in self.buttons:
             button.update(self.camera.get_coord())
+
+    def update(self, main_chunk, camera):
+        # qwerty
         objects = self.get_to_update(self.bullets, self.team, self.buttons)
         for bullet in self.bullets:
             res = bullet.update(objects[:], main_chunk)
@@ -640,6 +642,9 @@ class Level(MainObject):
             self.main_chunk = main_chunk
             return True
         return False
+
+    def button_update(self):
+        self.main_group.button_update()
 
     def add_button(self, button):
         self.main_group.add_buttons(button)
@@ -1225,6 +1230,10 @@ class MovingObject(HealPointObject):
                     self.collision_y_site = 1
             rect = self.rect
             self.rect = self.get_rect()
+            # не лезь оно потом когда-нибудь заработает))
+            # не фиксить я потом придумаю чтонибудь)
+            # ты точно понял что не надо фиксить?
+            # ты точно, точно понял?
             if collide_rect(self, pl.get_mask()):
                 # если ты в доме то твой слой равен слою
                 if self.home == pl:
@@ -1439,13 +1448,11 @@ class ImageButton(Object):
         super().__init__(images, coord)
         self.coord = coord
         self.action = action
-        self.last = 0
 
     def update(self, zero_coord):
         # asd
         pos_mouse = pygame.mouse.get_pos()
         pos = (zero_coord[0] + pos_mouse[0], zero_coord[1] + pos_mouse[1])
         # если кнопка льпущена и нажата на кнопку
-        if self.last == 1 and pygame.mouse.get_pressed()[0] == 0 and self.rect.collidepoint(pos):
+        if self.rect.collidepoint(pos):
             self.action()
-        self.last = pygame.mouse.get_pressed()[0]

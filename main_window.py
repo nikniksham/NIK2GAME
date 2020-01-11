@@ -31,6 +31,10 @@ class GameScreen(Widget):
         super().__init__(surface, coord, active, is_zooming, zoom, max_zoom, min_zoom, is_scrolling_x, is_scrolling_y,
                          is_scroll_line_x, is_scroll_line_y, scroll_x, scroll_y)
 
+    def update(self, event):
+        if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+            self.scene.button_update()
+
     def hero_update(self):
         # стрельба
         if self.app.hero.weapon is not None and self.app.hero.home is None:
@@ -87,7 +91,7 @@ class Game(Application):
     def update_mission(self):
         self.draw_time.update_text(text=str(self.timer.get_time()[0]))
         if self.timer.get_time()[0] >= 20:
-            self.missions.wave(100, self)
+            group = self.missions.wave(0, self)
 
     def update_interface(self):
         self.draw_frs.update_text(text=str(int(self.clock.get_fps())))
