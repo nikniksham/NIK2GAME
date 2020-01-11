@@ -110,6 +110,13 @@ class Application:
             return True
         return False
 
+    def remove_widget(self, widget):
+        for layer in self.get_layers():
+            if widget in self.widgets[layer]:
+                self.widgets[layer].remove(widget)
+                return True
+        return False
+
     # получить слои
     def get_layers(self):
         # получить список слоёв

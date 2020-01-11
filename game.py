@@ -87,7 +87,9 @@ class Missions:
         # print(len(bots.get_objects()))
         build = Build((10, 100), 'sprite\\Building_sprites\\House.png', then.scene,
                       'sprite/Building_sprites/House_in.png', Rect((25, 120), (35, 70)))
+        bonfire = PassiveAnimationBuild('sprite/blocks_sprites/bonfire/', 7, (10, 300), scene)
         site_1.add_object(build)
+        site_1.add_object(bonfire)
         print(then.scene.add_site(site_1))
 
     def wave(self, count, then):

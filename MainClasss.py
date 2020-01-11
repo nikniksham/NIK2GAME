@@ -151,7 +151,7 @@ class Image(MainObject, Sprite):
         return self.layer
 
     def get_mask(self):
-        return Wonderful(Rect(self.coord, self.image.get_size()))
+        return Wonderful(Rect(self.get_coord(), self.image.get_size()))
 
     def set_coord(self, coord):
         self.coord = coord
@@ -187,7 +187,7 @@ class Animation(Image):
 
     def update(self, *args):
         self.to_next_frame += 1
-        if self.to_next_frame >= self.speed:
+        if self.to_next_frame == self.speed:
             self.frame += 1
             if self.frame >= len(self.images) - 1:
                 self.frame = 0
@@ -467,21 +467,32 @@ class Build(Object):
         self.join = True
 
     def update(self, objects, main_chunk, camera):
-        for object in objects:
-            # если гг у двери и кнопка не отрисовывается
-            if object.is_type('MainHero') and self.door_rect.colliderect(object.rect) and not self.button_drawing:
-                self.scena.add_button(self.button)
-                self.button_drawing = True
-            # print(len(self.scena.main_group.buttons), self.in_hom, self.can_join, 'dasfgas')
-            # если гг не у двери а кнопка отрисовывается
-            if object.is_type('MainHero') and not self.door_rect.colliderect(object.rect) and self.button_drawing:
-                self.button_drawing = False
-                self.scena.remove_button(self.button)
-            # входим в дом
-            if object.is_type('MainHero') and self.join and self.can_entering(object):
-                self.button_drawing = False
-                self.scena.remove_button(self.button)
-                self.join = False
+        if self.can_join:
+            for object in objects:
+                # если гг у двери и кнопка не отрисовывается
+                if object.is_type('MainHero') and self.door_rect.colliderect(object.rect) and not self.button_drawing:
+                    self.scena.add_button(self.button)
+                    self.button_drawing = True
+                # print(len(self.scena.main_group.buttons), self.in_hom, self.can_join, 'dasfgas')
+                # если гг не у двери а кнопка отрисовывается
+                if object.is_type('MainHero') and not self.door_rect.colliderect(object.rect) and self.button_drawing:
+                    self.button_drawing = False
+                    self.scena.remove_button(self.button)
+                # входим в дом
+                if object.is_type('MainHero') and self.join and self.can_entering(object):
+                    self.button_drawing = False
+                    self.scena.remove_button(self.button)
+                    self.join = False
+
+
+class PassiveAnimationBuild(Build):
+    def __init__(self, way, speed, coord, scena, color_key=(255, 255, 255)):
+        self.animation = Animation(way, speed, coord, color_key)
+        super().__init__(coord, self.animation.get_image(), scena)
+
+    def get_image(self):
+        self.animation.update()
+        return self.animation.get_image()
 
 
 class Site(MainObject):
@@ -568,6 +579,7 @@ class MainGroup(MainObject):
             res += self.team[1:]
         for site in self.sites:
             res += site.get_objects()
+        # print('количество объектов на сцене', len(res))
         return res
 
     def get_walls(self):
