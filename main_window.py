@@ -31,6 +31,7 @@ class GameScreen(Widget):
     def hero_update(self):
         # стрельба
         if self.app.hero.weapon is not None and self.get_active():
+            print(self.get_active())
             self.app.hero.weapon.shoot(self.camera, self.app.mouse_pressed(1), self.app.hero, 'sprite/bullets/standard_bullet.bmp',
                                    self.scene)
         # ходьба и бег
@@ -79,23 +80,6 @@ class Game(Application):
     def update_interface(self):
         self.draw_frs.update_text(text=str(int(self.clock.get_fps())))
         self.lkm_used = False
-
-    def hero_update(self):
-        # стрельба
-        if self.hero.weapon is not None:
-            self.hero.weapon.shoot(self.camera, self.mouse_pressed(1), self.hero, 'sprite/bullets/standard_bullet.bmp',
-                                   self.scene)
-        # ходьба и бег
-        left = self.key_pressed(pygame.K_a)
-        right = self.key_pressed(pygame.K_d)
-        up = self.key_pressed(pygame.K_w)
-        down = self.key_pressed(pygame.K_s)
-        shift = self.key_pressed(pygame.K_LSHIFT) or self.key_pressed(pygame.K_RSHIFT)
-        self.hero.update(left, right, up, down, self.scene.get_walls(self.hero.get_rect()), shift)
-
-    def draw_scene(self):
-        self.game_sceen.set_image(self.camera.draw(self.scene))
-        self.render(0)
 
 
 def run(camera, scene, map_image, missions):

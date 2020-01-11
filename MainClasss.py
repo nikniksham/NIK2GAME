@@ -599,10 +599,12 @@ class MainGroup(MainObject):
     def get_bot_groups(self):
         return self.bots
 
+    def button_update(self, pos):
+        for button in self.buttons:
+            button.update(pos)
+
     def update(self, main_chunk, camera):
         # qwerty
-        for button in self.buttons:
-            button.update(camera.get_coord())
         objects = self.get_to_update(self.bullets, self.team)
         for bullet in self.bullets:
             res = bullet.update(objects[:], main_chunk)
@@ -839,7 +841,7 @@ class Item(Object):
         return f'type {self.get_name()}, count {self.get_count()}'
 
 
-class Inventory(Item):
+class Inventory:
     def __init__(self, size, items=[]):
         self.size_inventory = size
         self.inventory = []

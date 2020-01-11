@@ -209,10 +209,11 @@ class Application:
                     self.set_screen((width, height), self.get_full_screen())
                     for widget in self.get_widgets():
                         widget.set_position(width, height)
+                if event.type == pygame.MOUSEMOTION and event.buttons[0] == 1:
+                    self.set_active_widgets(event)
                 # событие нажатия клавиши мыши
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     self.pressed_mouse_button.append(event.button)
-                    # self.get_mouse_event(event)
                 # событие нажатия клавиши клавиатуры
                 if event.type == pygame.KEYDOWN:
                     self.pressed_key.append(event.key)
@@ -257,6 +258,16 @@ class Application:
             self.screen.blit(widget.get_surface(), widget.get_rect())
 
     # обработчик событий мыши
+    def set_active_widgets(self, event):
+        pos = event.pos
+        good = False
+        for widget in self.get_widgets(reverse=True):
+            if good:
+                widget.active = False
+            else:
+                widget.set_active(pos)
+                good = True
+
     def mouse_key_up_event(self, event):
         # asd
         if event.button == 1:
@@ -289,10 +300,7 @@ class Application:
                 print(widget.rect)
                 widget.update(event)
 
-    def mouse_key_up_event(self, event):
-        for widget in self.get_widgets(reverse=True):
-            if widget.get_active():
-                widget.update(event)
+
 
     # проверить нажата ли кнопка мыши
     def mouse_pressed(self, number_mouse):
@@ -402,8 +410,9 @@ class Widget:
         else:
             self.rect.y = h_
 
+
+    # используется в приложении или нет
     def in_application(self):
-        # используется в приложении или нет
         return True if self.app is not None else False
 
     # задать приложение в котором используется
@@ -514,16 +523,13 @@ class Widget:
         return self.rect
 
 
-class Audio:
-    pass
+
+class Audio: None
 
 
 class Button(Widget):
-    def __init__(self, surfaces, coord, function, active=False, is_zooming=False, zoom=1, max_zoom=1, min_zoom=0.15,
-                 is_scrolling_x=False, is_scrolling_y=False, is_scroll_line_x=False, is_scroll_line_y=False, scroll_x=0,
-                 scroll_y=0):
-        super().__init__(surfaces, coord, active, is_zooming, zoom, max_zoom, min_zoom, is_scrolling_x, is_scrolling_y,
-                         is_scroll_line_x, is_scroll_line_y, scroll_x, scroll_y)
+    def __init__(self, surfaces, coord, function, active=False, is_zooming=False, zoom=1, max_zoom=1, min_zoom=0.15, is_scrolling_x=False, is_scrolling_y=False, is_scroll_line_x=False, is_scroll_line_y=False, scroll_x=0, scroll_y=0):
+        super().__init__(surfaces, coord, active, is_zooming, zoom, max_zoom, min_zoom, is_scrolling_x, is_scrolling_y, is_scroll_line_x, is_scroll_line_y, scroll_x, scroll_y)
         self.pressed = False
         self.function = function
 
@@ -539,11 +545,8 @@ class Button(Widget):
 
 
 class AnimationWidgets(Widget):
-    def __init__(self, surfaces, coord, sec, active=False, is_zooming=False, zoom=1, min_zoom=0.15,
-                 is_scrolling_x=False, is_scrolling_y=False, is_scroll_line_x=False, is_scroll_line_y=False, scroll_x=0,
-                 scroll_y=0):
-        super().__init__(surfaces, coord, active, is_zooming, zoom, min_zoom, is_scrolling_x, is_scrolling_y,
-                         is_scroll_line_x, is_scroll_line_y, scroll_x, scroll_y)
+    def __init__(self, surfaces, coord, sec, active=False, is_zooming=False, zoom=1, max_zoom=1, min_zoom=0.15, is_scrolling_x=False, is_scrolling_y=False, is_scroll_line_x=False, is_scroll_line_y=False, scroll_x=0, scroll_y=0):
+        super().__init__(surfaces, coord, active, is_zooming, zoom, max_zoom, min_zoom, is_scrolling_x, is_scrolling_y, is_scroll_line_x, is_scroll_line_y, scroll_x, scroll_y)
         self.sec = sec
         self.tick = 0
         self.index = 0
