@@ -65,7 +65,7 @@ class Application:
         # часы для граничения FPS
         self.clock = pygame.time.Clock()
         # количество кадров в секунду 0 - неограничено
-        self.FPS = 0
+        self.FPS = 80
         # приложение работает
         self.running = True
         # картинка мыши если None то обычная мышь
@@ -212,7 +212,7 @@ class Application:
                 # событие нажатия клавиши мыши
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     self.pressed_mouse_button.append(event.button)
-                    self.get_mouse_event(event)
+                    # self.get_mouse_event(event)
                 # событие нажатия клавиши клавиатуры
                 if event.type == pygame.KEYDOWN:
                     self.pressed_key.append(event.key)
@@ -257,7 +257,8 @@ class Application:
             self.screen.blit(widget.get_surface(), widget.get_rect())
 
     # обработчик событий мыши
-    def get_mouse_event(self, event):
+    def mouse_key_up_event(self, event):
+        # asd
         if event.button == 1:
             self.on_click(event)
         else:
@@ -277,11 +278,16 @@ class Application:
     # обрабатывает нажатие левой кнопкой мыши
     def on_click(self, event):
         pos = event.pos
+        good = False
         for widget in self.get_widgets(reverse=True):
-            widget.set_active(pos)
-            if widget.get_active():
+            if good:
+                widget.active = False
+            else:
+                widget.set_active(pos)
+            if widget.get_active() and not good:
+                good = True
+                print(widget.rect)
                 widget.update(event)
-                break
 
     def mouse_key_up_event(self, event):
         for widget in self.get_widgets(reverse=True):
@@ -353,7 +359,7 @@ class Widget:
                     res_surfaces.append(load_image(surface))
                 else:
                     res_surfaces.append(surface)
-        self.images_orig = res_surfaces
+        self.images_orig = res_surfaces[:]
         self.set_image(self.images_orig[0])
         # рект
         self.rect = self.image.get_rect()
@@ -396,9 +402,8 @@ class Widget:
         else:
             self.rect.y = h_
 
-
-    # используется в приложении или нет
     def in_application(self):
+        # используется в приложении или нет
         return True if self.app is not None else False
 
     # задать приложение в котором используется
@@ -509,13 +514,16 @@ class Widget:
         return self.rect
 
 
-
-class Audio: None
+class Audio:
+    pass
 
 
 class Button(Widget):
-    def __init__(self, surfaces, coord, function, active=False, is_zooming=False, zoom=1, min_zoom=0.15, is_scrolling_x=False, is_scrolling_y=False, is_scroll_line_x=False, is_scroll_line_y=False, scroll_x=0, scroll_y=0):
-        super().__init__(surfaces, coord, active, is_zooming, zoom, min_zoom, is_scrolling_x, is_scrolling_y, is_scroll_line_x, is_scroll_line_y, scroll_x, scroll_y)
+    def __init__(self, surfaces, coord, function, active=False, is_zooming=False, zoom=1, max_zoom=1, min_zoom=0.15,
+                 is_scrolling_x=False, is_scrolling_y=False, is_scroll_line_x=False, is_scroll_line_y=False, scroll_x=0,
+                 scroll_y=0):
+        super().__init__(surfaces, coord, active, is_zooming, zoom, max_zoom, min_zoom, is_scrolling_x, is_scrolling_y,
+                         is_scroll_line_x, is_scroll_line_y, scroll_x, scroll_y)
         self.pressed = False
         self.function = function
 
@@ -531,8 +539,11 @@ class Button(Widget):
 
 
 class AnimationWidgets(Widget):
-    def __init__(self, surfaces, coord, sec, active=False, is_zooming=False, zoom=1, min_zoom=0.15, is_scrolling_x=False, is_scrolling_y=False, is_scroll_line_x=False, is_scroll_line_y=False, scroll_x=0, scroll_y=0):
-        super().__init__(surfaces, coord, active, is_zooming, zoom, min_zoom, is_scrolling_x, is_scrolling_y, is_scroll_line_x, is_scroll_line_y, scroll_x, scroll_y)
+    def __init__(self, surfaces, coord, sec, active=False, is_zooming=False, zoom=1, min_zoom=0.15,
+                 is_scrolling_x=False, is_scrolling_y=False, is_scroll_line_x=False, is_scroll_line_y=False, scroll_x=0,
+                 scroll_y=0):
+        super().__init__(surfaces, coord, active, is_zooming, zoom, min_zoom, is_scrolling_x, is_scrolling_y,
+                         is_scroll_line_x, is_scroll_line_y, scroll_x, scroll_y)
         self.sec = sec
         self.tick = 0
         self.index = 0

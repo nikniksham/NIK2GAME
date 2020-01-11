@@ -10,7 +10,7 @@ lol = pygame.display.set_mode((10, 10))
 load_data()
 KILLED_ZOMBIE = 0
 LEVEL = 1
-MAX_COUNT_ZOMBIE = 25
+MAX_COUNT_ZOMBIE = 0
 # размер одного бока
 size = 30
 # 1 чанк 16 на 16 картинок
@@ -61,28 +61,32 @@ def mission_1(then):
     group_helper.summon(zombie_group, ['Zombie', 'sprite/Enemy_sprites/forward/Zombie/Zombie_forward_1.png',
                                        hero.get_coord(), 'Enemy_sprites', 'Zombie', 10, hero,  None, 'png'], MAX_COUNT_ZOMBIE)
 
+    site_1 = Site()
     site = Site()
-    build = Build((10, 100), 'sprite/Building_sprites/Palatka/camp_1.png')
+    build = Build((10, 100), 'sprite/Building_sprites/Palatka/camp_1.png', then.scene)
     site.add_object(build)
-    build = Build((110, 100), 'sprite/Building_sprites/Palatka/camp_1.png')
+    build = Build((110, 100), 'sprite/Building_sprites/Palatka/camp_1.png', then.scene)
+    # then.scene.main_chunk.set_clear_chunk(build.rect)
+    site.add_object(build)
+    build = Build((210, 100), 'sprite/Building_sprites/Palatka/camp_1.png', then.scene)
+    site.add_object(build)
+    build = Build((310, 100), 'sprite/Building_sprites/Palatka/camp_1.png', then.scene)
+    site.add_object(build)
+    build = Build((10, 300), 'sprite/Building_sprites/Palatka/camp_1.png', then.scene)
+    site.add_object(build)
+    build = Build((110, 300), 'sprite/Building_sprites/Palatka/camp_1.png', then.scene)
     then.scene.main_chunk.set_clear_chunk(build.rect)
     site.add_object(build)
-    build = Build((210, 100), 'sprite/Building_sprites/Palatka/camp_1.png')
+    build = Build((210, 300), 'sprite/Building_sprites/Palatka/camp_1.png', then.scene)
     site.add_object(build)
-    build = Build((310, 100), 'sprite/Building_sprites/Palatka/camp_1.png')
-    site.add_object(build)
-    build = Build((10, 300), 'sprite/Building_sprites/Palatka/camp_1.png')
-    site.add_object(build)
-    build = Build((110, 300), 'sprite/Building_sprites/Palatka/camp_1.png')
-    then.scene.main_chunk.set_clear_chunk(build.rect)
-    site.add_object(build)
-    build = Build((210, 300), 'sprite/Building_sprites/Palatka/camp_1.png')
-    site.add_object(build)
-    build = Build((310, 300), 'sprite/Building_sprites/Palatka/camp_1.png')
+    build = Build((310, 300), 'sprite/Building_sprites/Palatka/camp_1.png', then.scene)
     site.add_object(build)
     # print(len(bots.get_objects()))
+    build = Build((10, 100), 'sprite\\Building_sprites\\House.png', then.scene, 'sprite/Building_sprites/House_in.png',
+                  Rect((25, 120), (35, 70)))
+    site_1.add_object(build)
     print(then.scene.add_bot_group(zombie_group))
-    print(then.scene.add_site(site))
+    print(then.scene.add_site(site_1))
 
 
 missions = [mission_1]

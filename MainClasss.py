@@ -6,6 +6,7 @@ import math
 from Framework import load_image
 import os
 
+lol = pygame.display.set_mode((10, 10))
 
 # в этом файле реализуется логика взаимодействия объектов между собой
 # убедительна просьба прочитать инструкцию перед написанием классов чтобы всем было удобнее
@@ -56,8 +57,49 @@ class Wonderful:
         return self.rect
 
 
-class MainObject:
+class Timer:
     def __init__(self):
+        self.types = ['Timer']
+        self.ticks = self.time_sec = self.time_min = self.time_hour = self.time_day = 0
+        self.stopwatch_ticks = 0
+        self.max_fps = 80
+        self.game = None
+        self.f_stopwatch = False
+
+    def update_timer(self):
+        self.ticks += self.game.get_fps() / self.max_fps
+        if self.f_stopwatch:
+            self.stopwatch_ticks += 1
+
+    def set_game(self, game):
+        self.game = game
+
+    def get_time(self):
+        self.synchronization(self.ticks)
+        return self.time_sec, self.time_min, self.time_hour, self.time_day
+
+    def synchronization(self, ticks):
+        self.time_sec = round(ticks / 60, 1)
+        self.time_min = round(ticks / 3600, 1)
+        self.time_hour = round(ticks / 216000, 1)
+        self.time_day = round(ticks / 5184000, 1)
+
+    def set_max_fps(self, fps):
+        if fps > 0:
+            self.max_fps = fps
+
+    def start_stopwatch(self):
+        self.f_stopwatch = True
+
+    def stop_stopwatch(self):
+        self.f_stopwatch = False
+        self.synchronization(self.f_stopwatch)
+        return self.time_sec, self.time_min, self.time_hour, self.time_day
+
+
+class MainObject(Timer):
+    def __init__(self):
+        super().__init__()
         self.types = ['MainObject']
 
     def get_types(self):
@@ -78,6 +120,7 @@ class Image(MainObject, Sprite):
         super().__init__()
         Sprite.__init__(self)
         # добавляем тип Image
+        self.in_home = False
         self.add_type('Image')
         # загружаем изображение
         if type(filename) == str:
@@ -91,6 +134,9 @@ class Image(MainObject, Sprite):
         self.image.set_colorkey(transpote_color)
         self.layer = 0
         self.is_back_ground = False
+
+    def set_in_home(self, in_home: bool):
+        self.in_home = bool(in_home)
 
     def set_bg(self, val: bool):
         self.is_back_ground = bool(val)
@@ -276,59 +322,128 @@ class BotGroup(MainObject):
 
 
 class Build(Object):
-    def __init__(self, coord, image_out, image_in=None, door_rect=None):
+    def __init__(self, coord, image_out, scena, image_in=None, door_rect=None):
+        # жутко не оптимизированая штука
         super().__init__(image_out, coord)
+        self.set_layer(0)
+        # рект объекта
         self.rect = Rect((coord[0], coord[1] + 10), (self.image.get_size()[0], self.image.get_size()[1] - 10))
+        # перс в доме
         self.in_hom = False
+        # тип здание для collision что-бы перс в доме рисовался певерх него
+        self.add_type('Build')
+        # сцена для добовления на неё кнопки зайти в дом
+        self.scena = scena
+        # нажата ли кнопка войти
+        self.join = False
+        # отрисовывается ли кнопка
+        self.button_drawing = False
+        # если в дом можно зайти
         if image_in is not None and door_rect is not None:
+            # можно ли войти  этот дом
             self.can_join = True
-            self.image_in = image_in
-            self.image_out = image_out
+            # кортинка внутри
+            self.image_in = load_image(image_in, (255, 255, 255))
+            # картинка снаружи
+            self.image_out = load_image(image_out)
+            # рект двери, когда гг заходит в него, то отрисовывается кнопка
             door_rect.x, door_rect.y = door_rect.x + coord[0], door_rect.y + coord[1]
+            # сохраняем рект двери
             self.door_rect = door_rect
-            self.up_wall_rect = Image(Surface(self.image_in.get_width(), 5), coord=coord)
-            self.left_wall_rect = Image(Surface(5, self.image_in.get_height()), coord=coord)
-            self.right_wall_rerct = Image(Surface(5, self.image_in.get_height()),
-                                          coord=(coord[0] + self.image_in.get_width() - 5, coord[1]))
-            self.down_wall_rerct = Image(Surface(5, self.image_in.get_height()),
-                                          coord=(coord[0], coord[1] + self.image_in.get_height() - 5))
+            # если кортеж
+            coord = list(coord)
+            # смещаем координаты на 30 т к можем ходить за домом
+            coord[1] += 30
+            # кнопка
+            self.button = ImageButton('sprite/buttons//door.png', (self.door_rect[0] - 30, self.door_rect[1]),
+                                      self.open_door)
+            # чтобыы кнопка отрисовывалась над домом
+            self.button.set_layer(self.layer + 10)
+            # чтены внутри
+            # верхняя стена от верха до пона высота 35
+            self.up_wall = Image(Surface((self.image_in.get_width(), 35)), coord=(coord[0], coord[1] - 30), transpote_color=(10, 10, 10))
+            # левая стена, обычная слевая тена
+            self.left_wall = Image(Surface((5, self.image_in.get_height() - 30)), coord=coord, transpote_color=(10, 10, 10))
+            # правая стена -//-
+            self.right_wall = Image(Surface((5, self.image_in.get_height() - 30)),
+                                          coord=(coord[0] + self.image_in.get_width() - 5, coord[1]), transpote_color=(10, 10, 10))
+            # нижняя стена -//-
+            self.down_wall = Image(Surface((self.image_in.get_width(), 5)),
+                                          coord=(coord[0], coord[1] + self.image_in.get_height() - 35), transpote_color=(10, 10, 10))
+        # если в дом нельзя зайти
         else:
+            # можно ди зайти в этот дом
             self.can_join = False
 
     def can_entering(self, object):
-        if self.can_join and self.door_rect.colliderect(object.get_rect()):
-            object.rect.bottom = self.down_wall_rerct.top
-            object.rect.left = self.left_wall_rect.right
+        # устанавливаем есть ли кто в доме
+        self.set_in_hom()
+        # вход в дом
+        if self.can_join and self.door_rect.colliderect(object.get_rect()) and self.in_hom:
+            object.rect.bottom = self.down_wall.rect.top
+            object.rect.left = self.door_rect.left
+            object.set_in_home(self.in_home)
+            print(2)
+            return True
+        # выход из дома
+        elif self.can_join and self.door_rect.colliderect(object.get_rect()) and not self.in_hom:
+            object.rect.top = self.down_wall.rect.bottom
+            object.rect.left = self.door_rect.left
+            object.set_in_home(self.in_home)
+            print(1)
             return True
         return False
 
     def get_coord(self):
+        # для отрисовки
         return self.rect.x, self.rect.y - 10
 
     def get_rect(self):
+        # для колизии
         return Rect(self.get_coord(), self.image.get_size())
 
-    def set_in_hom(self, in_hom: bool):
+    def set_in_hom(self):
+        # если в дом можно зайти
         if self.can_join:
-            self.in_hom = bool(in_hom)
+            self.in_hom = not self.in_hom
+            # устанавливаем картинку
             if self.in_hom:
                 self.image = self.image_in
             else:
                 self.image = self.image_out
 
     def get_walls(self):
+        # получить стены либо 1 либо 4 стены
         res = []
         if self.in_hom:
-            res.append(self.left_wall_rect)
-            res.append(self.right_wall_rerct)
-            res.append(self.up_wall_rect)
-            res.append(self.down_wall_rerct)
+            res.append(self.left_wall)
+            res.append(self.right_wall)
+            res.append(self.up_wall)
+            res.append(self.down_wall)
         else:
             res.append(self)
         return res
 
+    def open_door(self):
+        # asd функция кнопки
+        self.join = True
+
     def update(self, objects, main_chunk, camera):
-        pass
+        for object in objects:
+            # если гг у двери и кнопка не отрисовывается
+            if object.is_type('MainHero') and self.door_rect.colliderect(object.rect) and not self.button_drawing:
+                self.scena.add_button(self.button)
+                self.button_drawing = True
+            # print(len(self.scena.main_group.buttons), self.in_hom, self.can_join, 'dasfgas')
+            # если гг не у двери а кнопка отрисовывается
+            if object.is_type('MainHero') and not self.door_rect.colliderect(object.rect) and self.button_drawing:
+                self.button_drawing = False
+                self.scena.remove_button(self.button)
+            # входим в дом
+            if object.is_type('MainHero') and self.join and self.can_entering(object):
+                self.button_drawing = False
+                self.scena.remove_button(self.button)
+                self.join = False
 
 
 class Site(MainObject):
@@ -376,10 +491,20 @@ class MainGroup(MainObject):
         super().__init__()
         self.add_type('Group')
         self.all_objects = []
+        self.buttons = []
         self.bullets = []
         self.bots = []
         self.team = []
         self.sites = []
+
+    def add_buttons(self, button):
+        self.buttons.append(button)
+
+    def remove_button(self, button):
+        if button in self.buttons:
+            self.buttons.remove(button)
+            return True
+        return False
 
     def add_bot_group(self, bot_group):
         if bot_group.is_type('BotGroup'):
@@ -395,6 +520,7 @@ class MainGroup(MainObject):
 
     def get_all_objects(self, person=True):
         res = self.all_objects[:]
+        res += self.buttons[:]
         res += self.get_bots()
         res += self.bullets[:]
         if person:
@@ -475,9 +601,11 @@ class MainGroup(MainObject):
 
     def update(self, main_chunk, camera):
         # qwerty
+        for button in self.buttons:
+            button.update(camera.get_coord())
+        objects = self.get_to_update(self.bullets, self.team)
         for bullet in self.bullets:
-            objects = self.get_to_update(self.bullets, self.team)
-            res = bullet.update(objects, main_chunk)
+            res = bullet.update(objects[:], main_chunk)
             if res:
                 self.remove_bullet(bullet)
         for group in self.get_bot_groups():
@@ -510,6 +638,12 @@ class Level(MainObject):
             self.main_chunk = main_chunk
             return True
         return False
+
+    def add_button(self, button):
+        self.main_group.add_buttons(button)
+
+    def remove_button(self, button):
+        self.main_group.remove_button(button)
 
     def add_bullet(self, bullet):
         self.main_group.add_bullet(bullet)
@@ -1089,10 +1223,13 @@ class MovingObject(HealPointObject):
                     self.collision_y_site = 1
             rect = self.rect
             self.rect = self.get_rect()
+            # не лезь оно потом когда-нибудь заработает))
             if collide_rect(self, pl.get_mask()):
-                if self.rect.bottom < pl.get_mask().rect.bottom:
+                if pl.is_type('Build') and self.in_home:
+                    self.set_layer(pl.get_layer() + 1)
+                elif self.get_layer() + 1 > self.get_layer() and self.rect.bottom < pl.get_mask().rect.bottom:
                     pl.set_layer(self.get_layer() + 1)
-                else:
+                elif pl.get_layer() + 1 > pl.get_layer():
                     self.set_layer(pl.get_layer() + 1)
             self.rect = rect
 
@@ -1281,3 +1418,20 @@ class EnemyBlock(Object):
 
     def attack(self, enemy):
         enemy.damage(self.damag)
+
+
+class ImageButton(Object):
+    def __init__(self, images, coord, action):
+        super().__init__(images, coord)
+        self.coord = coord
+        self.action = action
+        self.last = 0
+
+    def update(self, zero_coord):
+        # asd
+        pos_mouse = pygame.mouse.get_pos()
+        pos = (zero_coord[0] + pos_mouse[0], zero_coord[1] + pos_mouse[1])
+        # если кнопка льпущена и нажата на кнопку
+        if self.last == 1 and pygame.mouse.get_pressed()[0] == 0 and self.rect.collidepoint(pos):
+            self.action()
+        self.last = pygame.mouse.get_pressed()[0]

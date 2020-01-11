@@ -47,12 +47,10 @@ class WeaponObj(Weapon):
         else:
             if self.draw_f:
                 scene.remove_object(self)
-                print('Произведенно выстрелов: ', self.count_shoot)
                 self.draw_f = False
 
     def check_reload(self):
         if self.count_shoot % self.holder == 0:
-            print(self.count_shoot, self.holder)
             self.pause = self.time_on_reload
             self.rotate_image(0)
             self.delay = self.time_on_reload
