@@ -358,13 +358,13 @@ class Widget:
         # оригинальное изоьражение
         res_surfaces = []
         if type(surfaces) == str:
-            res_surfaces.append(load_image(surfaces))
+            res_surfaces.append(load_image(surfaces).copy())
         elif type(surfaces) == Surface:
             res_surfaces = [surfaces]
         else:
             for surface in surfaces:
                 if type(surface) == str:
-                    res_surfaces.append(load_image(surface))
+                    res_surfaces.append(load_image(surface.copy()))
                 else:
                     res_surfaces.append(surface)
         self.images_orig = res_surfaces[:]
@@ -390,7 +390,6 @@ class Widget:
         self.image = self.image_orig
         if self.size is not None:
             self.image = scale_to(self.image, self.size)
-        self.rect = self.image.get_rect()
         if self.app is not None:
             self.set_position(self.app.get_width(), self.app.get_height())
         if self.stock:
@@ -409,7 +408,6 @@ class Widget:
             self.rect.bottom = h + h_
         else:
             self.rect.y = h_
-
 
     # используется в приложении или нет
     def in_application(self):

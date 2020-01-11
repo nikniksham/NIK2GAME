@@ -787,6 +787,7 @@ class Camera(MainObject):
 
 class Item(Object):
     def __init__(self, image, coord, name, max_count, info='', count=0):
+        self.original_image = Image(image).get_image().copy()
         super().__init__(image, coord)
         global ID
         self.add_type('Item')
@@ -1037,14 +1038,14 @@ class Weapon(Bullet):
         shoot_f = shoot_bool
         angle = 0
         if shoot_f:
-            if hero.weapon.shoot_delay(scene):
-                hero.weapon.count_shoot += 1
-                hero.weapon.tick = 0
-                angle = hero.weapon.spawn_bullet(camera, hero, image, scene)
+            if hero.get_in_hand().shoot_delay(scene):
+                hero.get_in_hand().count_shoot += 1
+                hero.get_in_hand().tick = 0
+                angle = hero.get_in_hand().spawn_bullet(camera, hero, image, scene)
         else:
-            hero.weapon.shoot_delay(scene)
-        hero.weapon.set_coord([hero.get_coord()[0] - 3, hero.get_coord()[1] + 7])
-        hero.weapon.rotate_image(angle)
+            hero.get_in_hand().shoot_delay(scene)
+        hero.get_in_hand().set_coord([hero.get_coord()[0] - 3, hero.get_coord()[1] + 7])
+        hero.get_in_hand().rotate_image(angle)
 
     def spawn_bullet(self, camera, hero, image, scene):
         self.bullet += 1
@@ -1053,11 +1054,11 @@ class Weapon(Bullet):
         mouse_x -= 5
         mouse_y -= 10
         coord = hero.get_coord()
-        sin, cos, rad = hero.weapon.flight_path([mouse_x, mouse_y], coord_person)
+        sin, cos, rad = hero.get_in_hand().flight_path([mouse_x, mouse_y], coord_person)
         angle = int(rad * 180 / math.pi)
         x_vel, y_vel = 10 * cos, 10 * sin
         # print(self.bullet, 'пуля')
-        scene.add_bullet(Bullet(image, [coord[0] + 5, coord[1] + 10], 'bullet', 10, 'standard', hero.weapon, x_vel, y_vel, self.attack_radius))
+        scene.add_bullet(Bullet(image, [coord[0] + 5, coord[1] + 10], 'bullet', 10, 'standard', hero.get_in_hand(), x_vel, y_vel, self.attack_radius))
         return angle
 
     def get_bullet_count(self):

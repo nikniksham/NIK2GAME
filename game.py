@@ -58,7 +58,8 @@ class Missions:
         AR15 = WeaponObj('sprite/Weapon_sprites/AR15.png', [100, 100], 'AR15', 1, 'simple', 'simple', 2500, [800, 1000],
                          3, then.screen, hero, 3000, 180)
         healpoint_NPS = Image('sprite/NPS_sprites/healpoint_nps.bmp')
-        then.scene.main_hero.weapon = AR15
+        then.scene.main_hero.inventory.add_item(AR15)
+        then.scene.main_hero.inventory.add_item(Desert_eagle)
         # bots = BotGroup('enemy', 'колючие платформы')
         # for x in range(300, 600, 60):
         #       print(bots.add_bot(EnemyBlock('sprite/blocks_sprites/spike.bmp', (x, 100), 1)))
