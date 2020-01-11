@@ -120,7 +120,7 @@ class Image(MainObject, Sprite):
         super().__init__()
         Sprite.__init__(self)
         # добавляем тип Image
-        self.in_home = False
+        self.home = None
         self.add_type('Image')
         # загружаем изображение
         if type(filename) == str:
@@ -135,8 +135,8 @@ class Image(MainObject, Sprite):
         self.layer = 0
         self.is_back_ground = False
 
-    def set_in_home(self, in_home: bool):
-        self.in_home = bool(in_home)
+    def set_in_home(self, home):
+        self.home = home
 
     def set_bg(self, val: bool):
         self.is_back_ground = bool(val)
@@ -331,6 +331,7 @@ class Build(Object):
         # перс в доме
         self.in_hom = False
         # тип здание для collision что-бы перс в доме рисовался певерх него
+        self.add_type('Static')
         self.add_type('Build')
         # сцена для добовления на неё кнопки зайти в дом
         self.scena = scena
@@ -382,15 +383,15 @@ class Build(Object):
         if self.can_join and self.door_rect.colliderect(object.get_rect()) and self.in_hom:
             object.rect.bottom = self.down_wall.rect.top
             object.rect.left = self.door_rect.left
-            object.set_in_home(self.in_home)
+            object.set_in_home(self)
             print(2)
             return True
         # выход из дома
         elif self.can_join and self.door_rect.colliderect(object.get_rect()) and not self.in_hom:
             object.rect.top = self.down_wall.rect.bottom
             object.rect.left = self.door_rect.left
-            object.set_in_home(self.in_home)
-            print(1)
+            object.set_in_home(None)
+            print(3)
             return True
         return False
 
@@ -487,9 +488,10 @@ class Site(MainObject):
 
 
 class MainGroup(MainObject):
-    def __init__(self):
+    def __init__(self, camera):
         super().__init__()
         self.add_type('Group')
+        self.camera = camera
         self.all_objects = []
         self.buttons = []
         self.bullets = []
@@ -602,8 +604,8 @@ class MainGroup(MainObject):
     def update(self, main_chunk, camera):
         # qwerty
         for button in self.buttons:
-            button.update(camera.get_coord())
-        objects = self.get_to_update(self.bullets, self.team)
+            button.update(self.camera.get_coord())
+        objects = self.get_to_update(self.bullets, self.team, self.buttons)
         for bullet in self.bullets:
             res = bullet.update(objects[:], main_chunk)
             if res:
@@ -619,13 +621,13 @@ class MainGroup(MainObject):
 
 
 class Level(MainObject):
-    def __init__(self, name, main_hero, main_chunk):
+    def __init__(self, name, main_hero, main_chunk, camera):
         self.main_chunk = ''
         self.add_main_chunk(main_chunk)
         super().__init__()
         # добавляем тип: Level
         self.add_type('Level')
-        self.main_group = MainGroup()
+        self.main_group = MainGroup(camera)
         self.main_group.add_to_team(main_hero)
         # название сцены
         self.name = name
@@ -839,7 +841,7 @@ class Item(Object):
         return f'type {self.get_name()}, count {self.get_count()}'
 
 
-class Inventory(Item):
+class Inventory:
     def __init__(self, size, items=[]):
         self.size_inventory = size
         self.inventory = []
@@ -1223,14 +1225,26 @@ class MovingObject(HealPointObject):
                     self.collision_y_site = 1
             rect = self.rect
             self.rect = self.get_rect()
-            # не лезь оно потом когда-нибудь заработает))
             if collide_rect(self, pl.get_mask()):
-                if pl.is_type('Build') and self.in_home:
+                # если ты в доме то твой слой равен слою
+                if self.home == pl:
                     self.set_layer(pl.get_layer() + 1)
-                elif self.get_layer() + 1 > self.get_layer() and self.rect.bottom < pl.get_mask().rect.bottom:
-                    pl.set_layer(self.get_layer() + 1)
-                elif pl.get_layer() + 1 > pl.get_layer():
-                    self.set_layer(pl.get_layer() + 1)
+                # если объект статичный то мы меняем только свой слой
+                elif pl.is_type('Static'):
+                    # мы перед статичным объектом
+                    if pl.get_layer() + 1 > self.get_layer() and self.rect.bottom > pl.get_mask().rect.bottom:
+                        self.set_layer(pl.get_layer() + 1)
+                    # мы за статичным объектом
+                    elif pl.get_layer() - 1 < self.get_layer() and self.rect.bottom < pl.get_mask().rect.bottom:
+                        self.set_layer(pl.get_layer() - 1)
+                # если это не статичный объект
+                else:
+                    # мы перед объектом
+                    if self.get_layer() + 1 > pl.get_layer() and self.rect.bottom > pl.get_mask().rect.bottom:
+                        pl.set_layer(self.get_layer() + 1)
+                    # мы за объектом
+                    elif pl.get_layer() + 1 > self.get_layer() and self.rect.bottom < pl.get_mask().rect.bottom:
+                        self.set_layer(pl.get_layer() + 1)
             self.rect = rect
 
 

@@ -22,17 +22,20 @@ class Slot(Widget):
 
 
 class GameScreen(Widget):
-    def __init__(self, camera, scene,  coord, active=False, is_zooming=False, zoom=1, max_zoom=1, min_zoom=0.15, is_scrolling_x=False, is_scrolling_y=False, is_scroll_line_x=False, is_scroll_line_y=False, scroll_x=0, scroll_y=0, size=None, stock=True):
+    def __init__(self, camera, scene,  coord, active=False, is_zooming=False, zoom=1, max_zoom=1, min_zoom=0.15,
+                 is_scrolling_x=False, is_scrolling_y=False, is_scroll_line_x=False, is_scroll_line_y=False, scroll_x=0,
+                 scroll_y=0, size=None, stock=True):
         surface = camera.draw(scene)
         self.camera = camera
         self.scene = scene
-        super().__init__(surface, coord, active, is_zooming, zoom, max_zoom, min_zoom, is_scrolling_x, is_scrolling_y, is_scroll_line_x, is_scroll_line_y, scroll_x, scroll_y)
+        super().__init__(surface, coord, active, is_zooming, zoom, max_zoom, min_zoom, is_scrolling_x, is_scrolling_y,
+                         is_scroll_line_x, is_scroll_line_y, scroll_x, scroll_y)
 
     def hero_update(self):
         # стрельба
-        if self.app.hero.weapon is not None and self.get_active():
-            self.app.hero.weapon.shoot(self.camera, self.app.mouse_pressed(1), self.app.hero, 'sprite/bullets/standard_bullet.bmp',
-                                   self.scene)
+        if self.app.hero.weapon is not None and self.app.hero.home is None:
+            self.app.hero.weapon.shoot(self.camera, self.app.mouse_pressed(1), self.app.hero,
+                                       'sprite/bullets/standard_bullet.bmp', self.scene)
         # ходьба и бег
         left = self.app.key_pressed(pygame.K_a)
         right = self.app.key_pressed(pygame.K_d)
@@ -48,50 +51,47 @@ class GameScreen(Widget):
 
 
 class Game(Application):
-    def __init__(self, size_screen, camera, scene, missions, full_screen=True):
+    def __init__(self, missions, size_screen, camera, scene, full_screen=True):
         super().__init__(size_screen, full_screen=full_screen)
-        self.mission = missions
+        self.missions = missions
         self.mission_index = 0
         self.camera = camera
         self.timer = Timer()
         self.timer.set_game(self)
+        self.one_wave = 100
         self.scene = scene
         self.game_sceen = GameScreen(camera, scene, (0, 0), zoom=1, is_zooming=False, min_zoom=0.3, stock=False)
         self.add_widget(self.game_sceen, 0)
         self.hot_keys = [pygame.K_F1, pygame.K_RETURN, pygame.K_ESCAPE]
+        self.draw_time = Text('0', 30, (-80, 10))
         self.draw_frs = Text('0', 30, (-10, 10))
         self.add_widget(self.draw_frs, 2)
+        self.add_widget(self.draw_time, 2)
         self.hero = scene.get_main_hero()
         self.lkm_used = False
+        self.add_event(self.timer.update_timer)
         self.add_event(self.funks)
         self.add_event(self.update_interface)
+        self.add_event(self.update_mission)
 
     def funks(self):
         if self.key_pressed(self.hot_keys[0]):
             self.camera.create()
             self.update_screen(self.widht, self.height)
         elif self.key_pressed(self.hot_keys[1]) and self.mission_index == 0:
-            self.mission[self.mission_index](self)
             self.mission_index += 1
+            self.missions.mission_1(self)
         elif self.key_pressed(self.hot_keys[2]):
             self.running = False
+
+    def update_mission(self):
+        self.draw_time.update_text(text=str(self.timer.get_time()[0]))
+        if self.timer.get_time()[0] >= 20:
+            self.missions.wave(100, self)
 
     def update_interface(self):
         self.draw_frs.update_text(text=str(int(self.clock.get_fps())))
         self.lkm_used = False
-
-    def hero_update(self):
-        # стрельба
-        if self.hero.weapon is not None:
-            self.hero.weapon.shoot(self.camera, self.mouse_pressed(1), self.hero, 'sprite/bullets/standard_bullet.bmp',
-                                   self.scene)
-        # ходьба и бег
-        left = self.key_pressed(pygame.K_a)
-        right = self.key_pressed(pygame.K_d)
-        up = self.key_pressed(pygame.K_w)
-        down = self.key_pressed(pygame.K_s)
-        shift = self.key_pressed(pygame.K_LSHIFT) or self.key_pressed(pygame.K_RSHIFT)
-        self.hero.update(left, right, up, down, self.scene.get_walls(self.hero.get_rect()), shift)
 
     def draw_scene(self):
         self.game_sceen.set_image(self.camera.draw(self.scene))
@@ -100,20 +100,20 @@ class Game(Application):
 
 def run(camera, scene, map_image, missions):
     size_screen = (GetSystemMetrics(0), GetSystemMetrics(1))
-    game = Game(size_screen, camera, scene, missions, full_screen=True)
+    game = Game(missions, size_screen, camera, scene, full_screen=True)
     REPOSITORY = 'sprite\\User_Interface\\'
     spase = 10
     slot = scale_to(load_image(REPOSITORY + 'enemy_slot.bmp', -1),
                     (int(size_screen[1] * 0.05), int(size_screen[1] * 0.05)))
-    #timate_image = scale_to(load_image(REPOSITORY + 'test name.png', -1),
-     #                       (int(5 * size_screen[1] * 0.05), int(1.5 * size_screen[1] * 0.05)))
-    #game_event = scale_to(load_image(REPOSITORY + 'game event.png', -1),
+    # timate_image = scale_to(load_image(REPOSITORY + 'test name.png', -1),
+    #                        (int(5 * size_screen[1] * 0.05), int(1.5 * size_screen[1] * 0.05)))
+    # game_event = scale_to(load_image(REPOSITORY + 'game event.png', -1),
     #                      (int(0.8 * size_screen[1] * 0.33), int(size_screen[1] * 0.33)))
-    #chat = scale_to(load_image(REPOSITORY + 'chat.png', -1),
+    # chat = scale_to(load_image(REPOSITORY + 'chat.png', -1),
     #                (int(0.8 * size_screen[1] * 0.33), int(size_screen[1] * 0.33)))
-    #hp_line = scale_to(load_image(REPOSITORY + 'hael point_line.png', -1),
+    # hp_line = scale_to(load_image(REPOSITORY + 'hael point_line.png', -1),
     #                   (int(size_screen[1] * 0.33), int(size_screen[1] * 0.05)))
-    #eat_line = scale_to(load_image(REPOSITORY + 'eat point_line.png', -1),
+    # eat_line = scale_to(load_image(REPOSITORY + 'eat point_line.png', -1),
     #                    (int(size_screen[1] * 0.33), int(size_screen[1] * 0.05)))
 
     inventory = scene.get_main_hero().inventory
@@ -140,13 +140,13 @@ def run(camera, scene, map_image, missions):
     # hp_line = Widget(hp_line, (-spase, 2 * spase + int(size_screen[1] * 0.33)))
     # eat_line = Widget(eat_line, (-spase, 3 * spase + int(size_screen[1] * 0.33) + int(size_screen[1] * 0.05)))
 
-    #game.add_widget(eat_line)
-    #game.add_widget(hp_line)
-    #game.add_widget(event)
-    #game.add_widget(chat)
-    #game.add_widget(timete_1)
-    #game.add_widget(timete_2)
-    #game.add_widget(timete_3)
+    # game.add_widget(eat_line)
+    # game.add_widget(hp_line)
+    # game.add_widget(event)
+    # game.add_widget(chat)
+    # game.add_widget(timete_1)
+    # game.add_widget(timete_2)
+    # game.add_widget(timete_3)
     game.add_widget(widget_map)
     game.add_widget(hot_barr_1)
     game.add_widget(hot_barr_2)

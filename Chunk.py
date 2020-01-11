@@ -15,7 +15,7 @@ class ChunkObject:
             self.rect = Rect((coord[0], coord[1], self.image.get_size()[0], 30))
 
         self.coord = coord[0], coord[1] - int(self.image.get_size()[1] - 30)
-        self.types = ['object', 'Image']
+        self.types = ['object', 'Image', 'Static']
         self.layer = 0
         self.is_back_ground = False
 

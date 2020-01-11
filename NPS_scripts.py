@@ -36,8 +36,8 @@ class WithSomeone(Person):
         platforms.remove(self.aim)
         if not self.die_f:
             self.x_vel, self.y_vel = 0, 0
-            if get_gipotinuza((self.rect.x, self.rect.y), (someone.rect.x, someone.rect.y)) > self.distance:
-                # and not self.f_x_1 and not self.f_x_2 and not self.f_y_1 and not self.f_y_2
+            if get_gipotinuza((self.rect.x, self.rect.y), (someone.rect.x, someone.rect.y)) > self.distance and\
+                    not self.f_x_1 and not self.f_x_2 and not self.f_y_1 and not self.f_y_2:
                 if self.get_coord()[0] > someone.get_coord()[0] + self.distance:
                     self.x_vel = -SPEED
                 elif self.get_coord()[0] < someone.get_coord()[0] - self.distance:
@@ -49,8 +49,7 @@ class WithSomeone(Person):
                 if self.name == 'Zombie':
                     if self.rect.colliderect(someone.rect):
                         someone.damage(0.1)
-            self.check_move_2(platforms)
-            self.coord = self.rect.x, self.rect.y
+            self.check_move_1(platforms)
             self.draw()
         else:
             self.die_animation()
@@ -65,15 +64,16 @@ class WithSomeone(Person):
         self.x_vel = 0
         self.y_vel = 0
         if not self.die_f:
-            if self.get_coord()[0] > self.random_point[0]:
-                self.x_vel = -SPEED
-            elif self.get_coord()[0] < self.random_point[0]:
-                self.x_vel = SPEED
-            if self.get_coord()[1] > self.random_point[1]:
-                self.y_vel = -SPEED
-            elif self.get_coord()[1] < self.random_point[1]:
-                self.y_vel = SPEED
-            self.check_move_2(platforms)
+            if not self.f_x_1 and not self.f_x_2 and not self.f_y_1 and not self.f_y_2:
+                if self.get_coord()[0] > self.random_point[0]:
+                    self.x_vel = -SPEED
+                elif self.get_coord()[0] < self.random_point[0]:
+                    self.x_vel = SPEED
+                if self.get_coord()[1] > self.random_point[1]:
+                    self.y_vel = -SPEED
+                elif self.get_coord()[1] < self.random_point[1]:
+                    self.y_vel = SPEED
+            self.check_move_1(platforms)
             self.coord = self.rect.x, self.rect.y
             self.draw()
             if self.random_point[0] - 30 < self.get_coord()[0] < self.random_point[0] + 30 and \
