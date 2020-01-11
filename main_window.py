@@ -28,10 +28,14 @@ class GameScreen(Widget):
         self.scene = scene
         super().__init__(surface, coord, active, is_zooming, zoom, max_zoom, min_zoom, is_scrolling_x, is_scrolling_y, is_scroll_line_x, is_scroll_line_y, scroll_x, scroll_y)
 
+    def update(self, event):
+        if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+            self.scene.button_update()
+
     def hero_update(self):
         # стрельба
         if self.app.hero.weapon is not None and self.get_active():
-            print(self.get_active())
+            # print(self.get_active())
             self.app.hero.weapon.shoot(self.camera, self.app.mouse_pressed(1), self.app.hero, 'sprite/bullets/standard_bullet.bmp',
                                    self.scene)
         # ходьба и бег
@@ -57,8 +61,8 @@ class Game(Application):
         self.timer = Timer()
         self.timer.set_game(self)
         self.scene = scene
-        self.game_sceen = GameScreen(camera, scene, (0, 0), zoom=1, is_zooming=False, min_zoom=0.3, stock=False)
-        self.add_widget(self.game_sceen, 0)
+        self.game_screen = GameScreen(camera, scene, (0, 0), zoom=1, is_zooming=False, min_zoom=0.3, stock=False)
+        self.add_widget(self.game_screen, 0)
         self.hot_keys = [pygame.K_F1, pygame.K_RETURN, pygame.K_ESCAPE]
         self.draw_frs = Text('0', 30, (-10, 10))
         self.add_widget(self.draw_frs, 2)

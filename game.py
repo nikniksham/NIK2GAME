@@ -43,7 +43,7 @@ image_map, main_chunk = load_level('world_TEST.wrld', slow, map_slow)
 hero = Player('MainHero', (35, 35), 'person_sprites', 'Player')
 
 # создаём сцену
-scene = Level('first_scene', hero, main_chunk)
+scene = Level('first_scene', hero, main_chunk, camera)
 
 
 def mission_1(then):
@@ -82,9 +82,9 @@ def mission_1(then):
     build = Build((310, 300), 'sprite/Building_sprites/Palatka/camp_1.png', then.scene)
     site.add_object(build)
     # print(len(bots.get_objects()))
-    #build = Build((10, 100), 'sprite\\Building_sprites\\House.png', then.scene, 'sprite/Building_sprites/House_in.png',
-    #              Rect((25, 120), (35, 70)))
-    #site_1.add_object(build)
+    build = Build((10, 100), 'sprite\\Building_sprites\\House.png', then.scene, 'sprite/Building_sprites/House_in.png',
+                  Rect((25, 120), (35, 70)))
+    site_1.add_object(build)
     print(then.scene.add_bot_group(zombie_group))
     print(then.scene.add_site(site_1))
 
