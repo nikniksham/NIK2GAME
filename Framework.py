@@ -410,6 +410,7 @@ class Widget:
         else:
             self.rect.y = h_
 
+
     # используется в приложении или нет
     def in_application(self):
         return True if self.app is not None else False
@@ -522,8 +523,8 @@ class Widget:
         return self.rect
 
 
-class Audio:
-    pass
+
+class Audio: None
 
 
 class Button(Widget):
