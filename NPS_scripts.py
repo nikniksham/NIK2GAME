@@ -51,9 +51,9 @@ class WithSomeone(Person):
                     self.y_vel = -SPEED
                 elif self.get_coord()[1] < someone.get_coord()[1] - self.distance:
                     self.y_vel = SPEED
-                if self.name == 'Zombie':
-                    if self.rect.colliderect(someone.rect):
-                        someone.damage(0.1)
+            if self.name == 'Zombie':
+                if self.rect.colliderect(someone.rect):
+                    someone.damage(0.1)
             self.check_move_1(platforms)
             self.draw()
         else:

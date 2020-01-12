@@ -65,7 +65,7 @@ class Application:
         # часы для граничения FPS
         self.clock = pygame.time.Clock()
         # количество кадров в секунду 0 - неограничено
-        self.FPS = 90
+        self.FPS = 80
         # приложение работает
         self.running = True
         # картинка мыши если None то обычная мышь
@@ -104,7 +104,8 @@ class Application:
         if issubclass(type(widget), Widget):
             widget.set_application(self)
             if layer in self.widgets:
-                self.widgets[layer].append(widget)
+                if widget not in self.widgets[layer]:
+                    self.widgets[layer].append(widget)
             else:
                 self.widgets[layer] = [widget]
             return True
@@ -148,7 +149,8 @@ class Application:
     # добавить ивент
     def add_event(self, event):
         # добавляем событие выполняется каждую итерацию
-        self.events.append(event)
+        if event not in self.events:
+            self.events.append(event)
 
     def remove_event(self, event):
         if event in self.events:
@@ -211,7 +213,6 @@ class Application:
     def run(self):
         # основной цикл
         while self.running:
-            print(self.running)
             # обробатываем события
             for event in pygame.event.get():
                 # событие закрытия
@@ -243,7 +244,6 @@ class Application:
                         self.pressed_key.remove(event.key)
                     self.key_up_event(event)
             # обработка функций
-            # print(len(self.events))
             for funk in self.events:
                 funk()
             # отрисовка экрана
@@ -280,7 +280,6 @@ class Application:
             if good:
                 widget.active = False
             else:
-                print(widget.get_rect(), pos)
                 widget.set_active(pos)
                 if widget.get_active():
                     good = True
@@ -348,8 +347,7 @@ class Application:
 class Widget:
     def __init__(self, surfaces, coord, active=False, is_zooming=False, zoom=1, max_zoom=1, min_zoom=0.15,
                  is_scrolling_x=False, is_scrolling_y=False, is_scroll_line_x=False, is_scroll_line_y=False, scroll_x=0,
-                 scroll_y=0, size=None, stock=True):
-        # размер экрана
+                 scroll_y=0, size=None, stock=True):        # размер экрана
         self.size = size
         # зум
         self.zoom = zoom
@@ -531,7 +529,8 @@ class Widget:
         return self.rect
 
 
-class Audio: None
+class Audio:
+    pass
 
 
 class Button(Widget):

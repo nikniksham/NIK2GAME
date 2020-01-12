@@ -1,4 +1,4 @@
-from Framework import Application, Widget, load_image, scale_to, Text, create_text, ProgressBar
+from Framework import Application, Widget, load_image, scale_to, Text, create_text, ProgressBar, Button
 from win32api import GetSystemMetrics
 import pygame
 from pygame import Surface
@@ -74,7 +74,6 @@ class Slot(Widget):
             self.app.hero.in_hand_index = self.pos[0]
 
 
-
 class GameScreen(Widget):
     def __init__(self, camera, scene,  coord, active=False, is_zooming=False, zoom=1, max_zoom=1, min_zoom=0.15,
                  is_scrolling_x=False, is_scrolling_y=False, is_scroll_line_x=False, is_scroll_line_y=False, scroll_x=0,
@@ -91,9 +90,9 @@ class GameScreen(Widget):
 
     def hero_update(self):
         # стрельба
-        if self.app.hero.get_in_hand() is not None and self.app.hero.get_in_hand().is_type('Weapon') and  self.app.hero.home is None:
+        if self.app.hero.get_in_hand() is not None and self.app.hero.get_in_hand().is_type('Weapon') and self.app.hero.home is None:
             self.app.hero.get_in_hand().shoot(self.camera, self.app.mouse_pressed(1), self.app.hero,
-                                       'sprite/bullets/standard_bullet.bmp', self.scene)
+                                              'sprite/bullets/standard_bullet.bmp', self.scene)
         # ходьба и бег
         left = self.app.key_pressed(pygame.K_a)
         right = self.app.key_pressed(pygame.K_d)
@@ -119,9 +118,12 @@ class Game(Application):
         self.wave_list = [150, 300]
         self.wave = 0
         self.wave_count = 75
+        self.skip_break_time = Button([load_image('sprite/buttons/Skip_break_time.png', (255, 255, 255)),
+                                       load_image('sprite/buttons/Skip_break_time_active.png', (255, 255, 255))],
+                                      (-980, 10), self.skip_time)
+        self.break_time = 60
         self.scene = scene
         self.time_to_wave = Text('0', 30, (-800, 10))
-        self.add_widget(self.time_to_wave, 2)
         space = 10
         red = (255, 0, 0)
         barr_back = load_image(REPOSITORY + 'barr back.png', -1)
@@ -129,21 +131,28 @@ class Game(Application):
         barr_top = load_image(REPOSITORY + 'barr_front.png', (255, 255, 255))
         barr_top = scale_to(barr_top, (int(size_screen[1] * 0.33), 25))
         self.hp_line = ProgressBar(barr_top, barr_back, (-space, -space), red, red, 0)
+        self.add_widget(self.hp_line)
+        self.add_widget(self.time_to_wave, 2)
+        self.button = True
         self.game_screen = GameScreen(camera, scene, (0, 0), zoom=1, is_zooming=False, min_zoom=0.3, stock=False)
         self.add_widget(self.game_screen, 0)
-        self.add_widget(self.hp_line)
         self.hot_keys = [pygame.K_F1, pygame.K_RETURN, pygame.K_ESCAPE]
-        self.draw_time = Text('0', 30, (-80, 10))
-        self.draw_frs = Text('0', 30, (-10, 10))
+        self.draw_time = Text('0', 30, (-120, 10))
+        self.draw_frs = Text('0', 30, (-20, 10))
         self.add_widget(self.draw_frs, 2)
+        self.fix_bot_count = 30
         self.add_widget(self.draw_time, 2)
         self.hero = scene.get_main_hero()
         self.lkm_used = False
         self.f_stopwatch = False
+        self.add_widget(self.skip_break_time, 2)
         self.add_event(self.timer.update_timer)
         self.add_event(self.funks)
         self.add_event(self.update_interface)
         self.add_event(self.update_mission_one)
+
+    def skip_time(self, then):
+        self.break_time = 0
 
     def funks(self):
         if self.key_pressed(self.hot_keys[0]):
@@ -159,21 +168,38 @@ class Game(Application):
         if not self.f_stopwatch:
             self.timer.start_stopwatch()
             self.f_stopwatch = True
-        if self.timer.get_stopwatch_time()[0] >= 10:
+        if self.timer.get_stopwatch_time()[0] >= self.break_time:
+            if self.button:
+                self.button = False
+                self.remove_widget(self.skip_break_time)
             group = self.missions.get_group()
             life_bot = group.get_life_bot()
-            if life_bot <= 30:
+            if life_bot <= self.fix_bot_count:
                 self.time_to_wave.update_text(f'Осталось {life_bot + self.wave_count} зомби')
-                if self.wave_count - (30 - life_bot) >= 0:
-                    self.missions.wave(30 - life_bot, self)
-                    self.wave_count -= (30 - life_bot)
+                if self.wave_count - (self.fix_bot_count - life_bot) >= 0:
+                    self.missions.wave(self.fix_bot_count - life_bot, self)
+                    self.wave_count -= (self.fix_bot_count - life_bot)
+                    life_bot = group.get_life_bot
+                if life_bot == 0:
+                    self.f_stopwatch = False
+                    self.break_time = 20
+                    self.timer.stop_stopwatch()
+                    if self.wave <= len(self.wave_list) - 1:
+                        self.wave_count = self.wave_list[self.wave]
+                        self.wave += 1
+                    else:
+                        self.remove_widget(self.time_to_wave)
+                        self.events.remove(self.update_mission_one)
+                        return
         else:
-            self.time_to_wave.update_text(
-                f'До волны осталось: {round(10 - self.timer.get_stopwatch_time()[0], 1)} секунд!')
+            if not self.button:
+                self.button = True
+                self.add_widget(self.skip_break_time)
+            self.time_to_wave.update_text(f'До волны осталось: {round(self.break_time - self.timer.get_stopwatch_time()[0], 1)} секунд!')
 
     def update_interface(self):
+        self.draw_time.update_text(text=str(self.timer.get_time()[0]))
         self.draw_frs.update_text(text=str(int(self.clock.get_fps())))
-        print(self.hero.heal_point / self.hero.max_heal_point)
         self.hp_line.update_bar(self.hero.heal_point / self.hero.max_heal_point)
         self.lkm_used = False
 
@@ -182,7 +208,7 @@ class Game(Application):
         self.render(0)
 
 
-def run(camera, scene, map_image, missions):
+def run(camera, scene, missions):
     size_screen = (GetSystemMetrics(0), GetSystemMetrics(1))
     game = Game(missions, size_screen, camera, scene, full_screen=True)
     REPOSITORY = 'sprite\\User_Interface\\'
@@ -212,7 +238,8 @@ def run(camera, scene, map_image, missions):
     hot_barr_9 = Slot(slot, (space * 9 + int(size_screen[1] * 0.05) * 8, space), (8, 0), inventory)
     hot_barr_10 = Slot(slot, (space * 10 + int(size_screen[1] * 0.05) * 9, space), (9, 0), inventory)
 
-    # widget_map = MapWidget(map_image, coord=(-space, space), size=(int(size_screen[1] * 0.33), int(size_screen[1] * 0.33)))
+    # widget_map = MapWidget(map_image, coord=(-space, space), size=(int(size_screen[1] * 0.33),
+    # int(size_screen[1] * 0.33)))
 
     # timete_1 = Widget(timate_image, (int(size_screen[0] * 0.2), -spase))
     # timete_2 = Widget(timate_image, (int(size_screen[0] * 0.4), -spase))
