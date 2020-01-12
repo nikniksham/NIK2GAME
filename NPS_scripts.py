@@ -4,8 +4,9 @@ SPEED = 1
 
 
 class WithSomeone(Person):
-    def __init__(self, name, image, coord, way_to_image, way_name, level, aim, armor=None, type='bmp'):
+    def __init__(self, name, image, coord, way_to_image, way_name, level, aim, camera, armor=None, type='bmp'):
         bonus = (level - 1) * level * 2
+        self.camera = camera
         super().__init__(image, coord, 100 + bonus, 100 + bonus, 100, 100, name, way_to_image, way_name, armor, type)
         self.f_x_1 = self.f_x_2 = self.f_y_1 = self.f_y_2 = False
         self.count_x = 0
@@ -32,8 +33,12 @@ class WithSomeone(Person):
         someone = self.aim
         self.x_vel = 0
         self.y_vel = 0
-        platforms = main_group.get_object(self.rect) + objects
-        platforms.remove(self.aim)
+        platforms = main_group.get_object(self.camera.get_rect())
+        for object in objects:
+            if object.is_type('Build'):
+                platforms.append(object)
+        # platforms = main_group.get_object(self.rect) + objects
+        # platforms.remove(self.aim)
         if not self.die_f:
             self.x_vel, self.y_vel = 0, 0
             if get_gipotinuza((self.rect.x, self.rect.y), (someone.rect.x, someone.rect.y)) > self.distance and\
@@ -60,7 +65,7 @@ class WithSomeone(Person):
     def get_rect(self):
         return Rect(self.rect.x, self.rect.y - 25, 20, 30)
 
-    def mov_to_random_point(self, platforms):
+    def mov_to_point(self, platforms):
         self.x_vel = 0
         self.y_vel = 0
         if not self.die_f:
@@ -289,7 +294,7 @@ class GroupHelper:
         pass
 
     def summon(self, group, object_list, quantity):
-        name, image, coord, way_to_image, way_name, level, aim, armor, type = object_list
+        name, image, coord, way_to_image, way_name, level, aim, camera, armor, type = object_list
         for _ in range(quantity):
             group.add_bot(WithSomeone(name, image, [coord[0] + random.choice(range(-1000, 1000)),
-                                         coord[1] + random.choice(range(-1000, 1000))], way_to_image, way_name, level, aim, armor, type))
+                                         coord[1] + random.choice(range(-1000, 1000))], way_to_image, way_name, level, aim, camera, armor, type))
