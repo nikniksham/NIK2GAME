@@ -91,6 +91,10 @@ class Timer:
     def start_stopwatch(self):
         self.f_stopwatch = True
 
+    def get_stopwatch_time(self):
+        self.synchronization(self.stopwatch_ticks)
+        return self.time_sec, self.time_min, self.time_hour, self.time_day
+
     def stop_stopwatch(self):
         self.f_stopwatch = False
         self.synchronization(self.f_stopwatch)
@@ -339,6 +343,13 @@ class BotGroup(MainObject):
     def get_friednly(self):
         return self.friendly
 
+    def get_life_bot(self):
+        count = 0
+        for elem in self.bots:
+            if not elem.die_f:
+                count += 1
+        return count
+
     def add_bot(self, *bots):
         for bot in bots:
             if bot.is_type('NPS'):
@@ -425,14 +436,14 @@ class Build(Object):
             object.rect.bottom = self.down_wall.rect.top
             object.rect.left = self.door_rect.left
             object.set_in_home(self)
-            print(2)
+            # print(2)
             return True
         # выход из дома
         elif self.can_join and self.door_rect.colliderect(object.get_rect()) and not self.in_hom:
             object.rect.top = self.down_wall.rect.bottom
             object.rect.left = self.door_rect.left
             object.set_in_home(None)
-            print(3)
+            # print(3)
             return True
         return False
 

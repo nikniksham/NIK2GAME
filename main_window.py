@@ -116,8 +116,12 @@ class Game(Application):
         self.camera = camera
         self.timer = Timer()
         self.timer.set_game(self)
-        self.one_wave = 100
+        self.wave_list = [150, 300]
+        self.wave = 0
+        self.wave_count = 75
         self.scene = scene
+        self.time_to_wave = Text('0', 30, (-800, 10))
+        self.add_widget(self.time_to_wave, 2)
         space = 10
         red = (255, 0, 0)
         barr_back = load_image(REPOSITORY + 'barr back.png', -1)
@@ -135,10 +139,11 @@ class Game(Application):
         self.add_widget(self.draw_time, 2)
         self.hero = scene.get_main_hero()
         self.lkm_used = False
+        self.f_stopwatch = False
         self.add_event(self.timer.update_timer)
         self.add_event(self.funks)
         self.add_event(self.update_interface)
-        self.add_event(self.update_mission)
+        self.add_event(self.update_mission_one)
 
     def funks(self):
         if self.key_pressed(self.hot_keys[0]):
@@ -150,12 +155,21 @@ class Game(Application):
         elif self.key_pressed(self.hot_keys[2]):
             self.running = False
 
-    def update_mission(self):
-        self.draw_time.update_text(text=str(self.timer.get_time()[0]))
-        if self.timer.get_time()[0] >= 20:
-            pass
-            # это на до заменить
-            # group = self.missions.wave(0, self)
+    def update_mission_one(self):
+        if not self.f_stopwatch:
+            self.timer.start_stopwatch()
+            self.f_stopwatch = True
+        if self.timer.get_stopwatch_time()[0] >= 10:
+            group = self.missions.get_group()
+            life_bot = group.get_life_bot()
+            if life_bot <= 30:
+                self.time_to_wave.update_text(f'Осталось {life_bot + self.wave_count} зомби')
+                if self.wave_count - (30 - life_bot) >= 0:
+                    self.missions.wave(30 - life_bot, self)
+                    self.wave_count -= (30 - life_bot)
+        else:
+            self.time_to_wave.update_text(
+                f'До волны осталось: {round(10 - self.timer.get_stopwatch_time()[0], 1)} секунд!')
 
     def update_interface(self):
         self.draw_frs.update_text(text=str(int(self.clock.get_fps())))
