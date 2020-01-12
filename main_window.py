@@ -1,4 +1,4 @@
-from Framework import Application, Widget, load_image, scale_to, Text, create_text, ProgressBar
+from Framework import Application, Widget, load_image, scale_to, Text, create_text, ProgressBar, Button
 from win32api import GetSystemMetrics
 import pygame
 from pygame import Surface
@@ -118,6 +118,9 @@ class Game(Application):
         self.wave_list = [150, 300]
         self.wave = 0
         self.wave_count = 75
+        self.skip_break_time = Button([load_image('sprite/buttons/Skip_break_time.png', (255, 255, 255)),
+                                       load_image('sprite/buttons/Skip_break_time_active.png', (255, 255, 255))],
+                                      (-980, 10), self.skip_time)
         self.break_time = 60
         self.scene = scene
         self.time_to_wave = Text('0', 30, (-800, 10))
@@ -133,10 +136,14 @@ class Game(Application):
         self.hero = scene.get_main_hero()
         self.lkm_used = False
         self.f_stopwatch = False
+        self.add_widget(self.skip_break_time, 2)
         self.add_event(self.timer.update_timer)
         self.add_event(self.funks)
         self.add_event(self.update_interface)
         self.add_event(self.update_mission_one)
+
+    def skip_time(self, then):
+        self.break_time = 0
 
     def funks(self):
         if self.key_pressed(self.hot_keys[0]):
@@ -153,6 +160,7 @@ class Game(Application):
             self.timer.start_stopwatch()
             self.f_stopwatch = True
         if self.timer.get_stopwatch_time()[0] >= self.break_time:
+            self.remove_widget(self.skip_break_time)
             group = self.missions.get_group()
             life_bot = group.get_life_bot()
             if life_bot <= self.fix_bot_count:
@@ -173,6 +181,7 @@ class Game(Application):
                         self.events.remove(self.update_mission_one)
                         return
         else:
+            self.add_widget(self.skip_break_time)
             self.time_to_wave.update_text(f'До волны осталось: {round(self.break_time - self.timer.get_stopwatch_time()[0], 1)} секунд!')
 
     def update_interface(self):

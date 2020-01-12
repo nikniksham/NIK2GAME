@@ -104,7 +104,8 @@ class Application:
         if issubclass(type(widget), Widget):
             widget.set_application(self)
             if layer in self.widgets:
-                self.widgets[layer].append(widget)
+                if widget not in self.widgets[layer]:
+                    self.widgets[layer].append(widget)
             else:
                 self.widgets[layer] = [widget]
             return True
@@ -148,7 +149,8 @@ class Application:
     # добавить ивент
     def add_event(self, event):
         # добавляем событие выполняется каждую итерацию
-        self.events.append(event)
+        if event not in self.events:
+            self.events.append(event)
 
     def remove_event(self, event):
         if event in self.events:
@@ -534,8 +536,8 @@ class Widget:
         return self.rect
 
 
-
-class Audio: None
+class Audio:
+    pass
 
 
 class Button(Widget):

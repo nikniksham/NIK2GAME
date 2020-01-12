@@ -75,7 +75,7 @@ class Timer:
         self.game = game
 
     def get_time(self):
-        self.synchronization(self.stopwatch_ticks)
+        self.synchronization(self.ticks)
         return self.time_sec, self.time_min, self.time_hour, self.time_day
 
     def get_stopwatch_time(self):
