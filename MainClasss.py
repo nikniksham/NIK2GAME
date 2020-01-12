@@ -183,6 +183,7 @@ class Animation(Image):
         files = list(os.walk(way))[0][-1]
         self.images = []
         for elem in files:
+            print(elem)
             self.images.append(Image(way + elem, transpote_color=color_key).get_image())
         super().__init__(self.images[0], transpote_color=color_key, coord=coord)
         self.frame = 0
@@ -192,6 +193,7 @@ class Animation(Image):
     def update(self, *args):
         self.to_next_frame += 1
         if self.to_next_frame == self.speed:
+            print(self.frame)
             self.frame += 1
             if self.frame >= len(self.images) - 1:
                 self.frame = 0
@@ -1499,8 +1501,12 @@ class AnimationObject(MovingObject):
             # переключиться на следующий кадр
             self.next_frame()
         else:
-            self.image = self.die_frames[self.die_frame].get_image()
-            self.next_die_frame()
+            if self.is_type('MainHero'):
+                self.die_frames.get_image()
+                self.die_frames.update()
+            else:
+                self.image = self.die_frames
+                self.next_die_frame()
 
     def resurrection(self):
         self.die_f = False
