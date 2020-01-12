@@ -58,8 +58,6 @@ class Missions:
         AR15 = WeaponObj('sprite/Weapon_sprites/AR15.png', [100, 100], 'AR15', 1, 'simple', 'simple', 2500, [800, 1000],
                          3, then.screen, hero, 3000, 180)
         healpoint_NPS = Image('sprite/NPS_sprites/healpoint_nps.bmp')
-        then.scene.main_hero.inventory.add_item(AR15)
-        then.scene.main_hero.inventory.add_item(Desert_eagle)
         # bots = BotGroup('enemy', 'колючие платформы')
         # for x in range(300, 600, 60):
         #       print(bots.add_bot(EnemyBlock('sprite/blocks_sprites/spike.bmp', (x, 100), 1)))
@@ -88,8 +86,10 @@ class Missions:
         build = Build((10, 100), 'sprite\\Building_sprites\\House.png', then.scene,
                       'sprite/Building_sprites/House_in.png', Rect((25, 120), (35, 70)))
         bonfire = PassiveAnimationBuild('sprite/blocks_sprites/bonfire/', 7, (10, 300), scene)
+        chest = Chest('sprite/Interactive_objects/chest.bmp', (70, 300), scene, [AR15, Desert_eagle])
         site_1.add_object(build)
         site_1.add_object(bonfire)
+        site_1.add_object(chest)
         print(then.scene.add_site(site_1))
 
     def wave(self, count, then):

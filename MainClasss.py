@@ -218,6 +218,9 @@ class Object(Image):
         else:
             MainObject.__init__(self)
             self.image = image
+            self.layer = 0
+            self.is_back_ground = False
+            self.home = None
         self.rect = self.image.get_rect()
         self.rect.x = coord[0]
         self.rect.y = coord[1]
@@ -360,6 +363,7 @@ class BotGroup(MainObject):
 
 class Build(Object):
     def __init__(self, coord, image_out, scena, image_in=None, door_rect=None):
+        # asf
         # жутко не оптимизированая штука
         super().__init__(image_out, coord)
         self.set_layer(0)
@@ -742,7 +746,7 @@ class Level(MainObject):
         res = []
         # проходимся по группам из списка групп
         res += self.main_group.get_all_objects()
-        # print(f'объекты сцены: {len(res)}')
+        print(f'объекты сцены: {len(res)}')
         res += self.get_map_images_objects(object)
         # возвращаем результат
         return res
@@ -953,9 +957,78 @@ class Inventory:
                 self.inventory[pos[1]][pos[0]] = item
                 return ret_item
 
+    def remove_item(self, item, pos=None):
+        if pos is None:
+            for y in range(self.size_inventory[1]):
+                for x in range(self.size_inventory[0]):
+                    if self.inventory[y][x] == item:
+                        self.inventory[y][x] = None
+                        return item
+        else:
+            if self.get_items(pos[0], pos[1])[0] == item:
+                self.inventory[pos[1]][pos[0]] = None
+                return item
+        return False
+
     def get_size(self):
         return self.size_inventory
 
+
+class Chest(Build):
+    def __init__(self, image_close, coord, scena, inventory=[]):
+        # asf
+        super().__init__(coord, image_close, scena)
+        self.inventory = inventory
+        self.button_in_drawing = False
+        self.button_out_drawing = False
+        self.activity = False
+        self.do_it = False
+        image_1 = Image('sprite/Interactive_objects/chest_put.bmp').get_image()
+        image_2 = Image('sprite/Interactive_objects/chest_take.bmp').get_image()
+        self.button_out = ImageButton(image_1, coord, self.out_items)
+        self.button_out.set_layer(self.get_layer() + 1)
+        self.button_in = ImageButton(image_2, coord, self.in_items)
+        self.button_in.set_layer(self.get_layer() + 1)
+
+    def out_items(self):
+        #print('out')
+        #print(self.activity)
+        self.do_it = True
+
+    def in_items(self):
+        #print('in')
+        #print(self.activity)
+        self.do_it = True
+
+    def update(self, objects, main_chunk, camera):
+        for object in objects:
+            if object.is_type('MainHero'):
+                # print(len(self.scena.main_group.buttons), self.rect.colliderect(object.get_rect()), not self.button_out_drawing, not self.activity)
+                if not self.button_in_drawing and self.activity and self.rect.colliderect(object.get_rect()):
+                    self.scena.add_button(self.button_in)
+                    self.scena.remove_button(self.button_out)
+                    self.button_in_drawing = True
+                    self.button_out_drawing = False
+                elif not self.button_out_drawing and not self.activity and self.rect.colliderect(object.get_rect()):
+                    self.scena.add_button(self.button_out)
+                    self.scena.remove_button(self.button_in)
+                    self.button_out_drawing = True
+                    self.button_in_drawing = False
+                elif self.do_it and self.rect.colliderect(object.get_rect()):
+                    if self.activity:
+                        for item in object.inventory.get_items():
+                            self.inventory.append(object.inventory.remove_item(item))
+                        # print(self.inventory, 101)
+                    else:
+                        for elem in self.inventory:
+                            object.inventory.add_item(elem)
+                    self.activity = not self.activity
+                    self.do_it = False
+                elif not self.rect.colliderect(object.get_rect()):
+                    self.scena.remove_button(self.button_in)
+                    self.scena.remove_button(self.button_out)
+                    self.button_out_drawing = False
+                    self.button_in_drawing = False
 
 # исправил на:
 # self.armor += upgrade_point
@@ -1496,6 +1569,7 @@ class EnemyBlock(Object):
 class ImageButton(Object):
     def __init__(self, images, coord, action):
         super().__init__(images, coord)
+        self.add_type('Static')
         self.coord = coord
         self.action = action
 

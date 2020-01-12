@@ -61,9 +61,11 @@ class Slot(Widget):
             count = create_text(str(item.get_count()), 15, (255, 255, 255))
             size = count.get_size()
             image.blit(count, (self.size_image[0] - size[0] - 5, self.size_image[1] - size[1] - 4))
-            self.set_image(image)
+            # лагакет
+            # self.set_image(image)
+            self.image = image
         else:
-            self.set_image(self.images_orig[0])
+            self.image = self.images_orig[0]
         return self.image
 
     def update(self, event):
