@@ -85,8 +85,12 @@ class GameScreen(Widget):
                          is_scroll_line_x, is_scroll_line_y, scroll_x, scroll_y)
 
     def update(self, event):
-        if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-            self.scene.button_update()
+        if event.type == pygame.KEYDOWN and event.key == self.app.hot_keys[3]:
+            print('wtf')
+            self.app.pause = not self.app.pause
+        if not self.app.pause:
+            if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                self.scene.button_update()
 
     def hero_update(self):
         # стрельба
@@ -102,8 +106,9 @@ class GameScreen(Widget):
         self.app.hero.update(left, right, up, down, self.scene.get_walls(self.app.hero.get_rect()), shift)
 
     def get_surface(self):
-        self.hero_update()
-        self.image = self.camera.draw(self.scene)
+        if not self.app.pause:
+            self.hero_update()
+            self.image = self.camera.draw(self.scene)
         return self.image
 
 
@@ -114,6 +119,7 @@ class Game(Application):
         self.mission_index = 0
         self.camera = camera
         self.timer = Timer()
+        self.pause = False
         self.timer.set_game(self)
         self.wave_list = [60, 120]
         self.wave = 0
@@ -121,7 +127,7 @@ class Game(Application):
         self.skip_break_time = Button([load_image('sprite/buttons/Skip_break_time.png', (255, 255, 255)),
                                        load_image('sprite/buttons/Skip_break_time_active.png', (255, 255, 255))],
                                       (-980, 10), self.skip_time)
-        self.break_time = 60
+        self.break_time = 180
         self.scene = scene
         self.time_to_wave = Text('0', 30, (-800, 10))
         space = 10
@@ -136,7 +142,7 @@ class Game(Application):
         self.button = True
         self.game_screen = GameScreen(camera, scene, (0, 0), zoom=1, is_zooming=False, min_zoom=0.3, stock=False)
         self.add_widget(self.game_screen, 0)
-        self.hot_keys = [pygame.K_F1, pygame.K_RETURN, pygame.K_ESCAPE]
+        self.hot_keys = [pygame.K_F1, pygame.K_RETURN, pygame.K_ESCAPE, pygame.K_SPACE]
         self.draw_time = Text('0', 30, (-120, 10))
         self.draw_frs = Text('0', 30, (-20, 10))
         self.add_widget(self.draw_frs, 2)
@@ -145,8 +151,8 @@ class Game(Application):
         self.hero = scene.get_main_hero()
         self.lkm_used = False
         self.f_stopwatch = False
+        self.dialog = True
         self.add_widget(self.skip_break_time, 2)
-        self.add_event(self.timer.update_timer)
         self.add_event(self.funks)
         self.add_event(self.update_interface)
         self.add_event(self.update_mission_one)
@@ -165,47 +171,48 @@ class Game(Application):
             self.running = False
 
     def update_mission_one(self):
-        if not self.f_stopwatch:
-            self.timer.start_stopwatch()
-            self.f_stopwatch = True
-        if self.timer.get_stopwatch_time()[0] >= self.break_time:
-            if self.button:
-                self.button = False
-                self.remove_widget(self.skip_break_time)
-            group = self.missions.get_group()
-            life_bot = group.get_life_bot()
-            if life_bot <= self.fix_bot_count:
-                self.time_to_wave.update_text(f'Осталось {life_bot + self.wave_count} зомби')
-                if self.wave_count - (self.fix_bot_count - life_bot) >= 0:
-                    self.missions.wave(self.fix_bot_count - life_bot, self)
-                    self.wave_count -= (self.fix_bot_count - life_bot)
-                    life_bot = group.get_life_bot
-                if life_bot == 0:
-                    self.f_stopwatch = False
-                    self.break_time = 20
-                    self.timer.stop_stopwatch()
-                    if self.wave <= len(self.wave_list) - 1:
-                        self.wave_count = self.wave_list[self.wave]
-                        self.wave += 1
-                    else:
-                        self.remove_widget(self.time_to_wave)
-                        self.events.remove(self.update_mission_one)
-                        return
-        else:
-            if not self.button:
-                self.button = True
-                self.add_widget(self.skip_break_time)
-            self.time_to_wave.update_text(f'До волны осталось: {round(self.break_time - self.timer.get_stopwatch_time()[0], 1)} секунд!')
+        if not self.pause:
+            if self.missions.need_update:
+                self.missions.update_test(self)
+            if not self.f_stopwatch:
+                self.timer.start_stopwatch()
+                self.f_stopwatch = True
+            if self.timer.get_stopwatch_time()[0] >= self.break_time:
+                if self.button:
+                    self.button = False
+                    self.remove_widget(self.skip_break_time)
+                group = self.missions.get_group()
+                life_bot = group.get_life_bot()
+                if life_bot <= self.fix_bot_count:
+                    self.time_to_wave.update_text(f'Осталось {life_bot + self.wave_count} зомби')
+                    if self.wave_count - (self.fix_bot_count - life_bot) >= 0:
+                        self.missions.wave(self.fix_bot_count - life_bot, self)
+                        self.wave_count -= (self.fix_bot_count - life_bot)
+                        life_bot = group.get_life_bot
+                    if life_bot == 0:
+                        self.f_stopwatch = False
+                        self.break_time = 20
+                        self.timer.stop_stopwatch()
+                        if self.wave <= len(self.wave_list) - 1:
+                            self.wave_count = self.wave_list[self.wave]
+                            self.wave += 1
+                        else:
+                            self.remove_widget(self.time_to_wave)
+                            self.events.remove(self.update_mission_one)
+                            return
+            else:
+                if not self.button:
+                    self.button = True
+                    self.add_widget(self.skip_break_time)
+                self.time_to_wave.update_text(f'До волны осталось: {int(self.break_time - self.timer.get_stopwatch_time()[0])} секунд!')
 
     def update_interface(self):
-        self.draw_time.update_text(text=str(self.timer.get_time()[0]))
-        self.draw_frs.update_text(text=str(int(self.clock.get_fps())))
-        self.hp_line.update_bar(self.hero.heal_point / self.hero.max_heal_point)
-        self.lkm_used = False
-
-    def draw_scene(self):
-        self.game_screen.set_image(self.camera.draw(self.scene))
-        self.render(0)
+        if not self.pause:
+            self.draw_time.update_text(text=str(int(self.timer.get_time()[0])))
+            self.timer.update_timer()
+            self.draw_frs.update_text(text=str(int(self.clock.get_fps())))
+            self.hp_line.update_bar(self.hero.heal_point / self.hero.max_heal_point)
+            self.lkm_used = False
 
 
 def run(camera, scene, missions):

@@ -4,7 +4,7 @@ from pygame.transform import *
 import os
 
 pygame.init()
-FONT_STYLE = 'arial.ttf'
+FONT_STYLE = 'NeogreyMedium.otf'
 
 
 def load_image(name, colorkey=None):
@@ -103,6 +103,7 @@ class Application:
         # добавить виджет на экран на слой=layer если не получается то return False
         if issubclass(type(widget), Widget):
             widget.set_application(self)
+            widget.set_position(self.widht, self.height)
             if layer in self.widgets:
                 if widget not in self.widgets[layer]:
                     self.widgets[layer].append(widget)
@@ -372,7 +373,7 @@ class Widget:
         else:
             for surface in surfaces:
                 if type(surface) == str:
-                    res_surfaces.append(load_image(surface.copy()))
+                    res_surfaces.append(load_image(surface).copy())
                 else:
                     res_surfaces.append(surface)
         self.images_orig = res_surfaces[:]
@@ -536,11 +537,12 @@ class Audio:
 class Button(Widget):
     def __init__(self, surfaces, coord, function, active=False, is_zooming=False, zoom=1, max_zoom=1, min_zoom=0.15,
                  is_scrolling_x=False, is_scrolling_y=False, is_scroll_line_x=False, is_scroll_line_y=False, scroll_x=0,
-                 scroll_y=0):
+                 scroll_y=0, push=False):
         super().__init__(surfaces, coord, active, is_zooming, zoom, max_zoom, min_zoom, is_scrolling_x, is_scrolling_y,
                          is_scroll_line_x, is_scroll_line_y, scroll_x, scroll_y)
         self.pressed = False
         self.function = function
+        self.push = push
 
     def set_active(self, pos):
         self.active = self.rect.collidepoint(pos)
@@ -558,7 +560,8 @@ class Button(Widget):
     def update(self, event):
         if event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1 and self.rect.collidepoint(event.pos):
-                self.pressed = not self.pressed
+                if not self.push:
+                    self.pressed = not self.pressed
                 self.set_image(self.images_orig[self.pressed])
                 self.function(self)
 
