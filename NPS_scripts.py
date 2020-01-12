@@ -12,6 +12,8 @@ class WithSomeone(Person):
         self.count_x = 0
         self.count_y = 0
         self.aim = aim
+        self.inventory = Inventory((1, 1))
+        self.in_hand_index = 0
         self.point = [0, 0]
         self.new_point = False
         self.weapon = None
@@ -20,6 +22,9 @@ class WithSomeone(Person):
         self.distance = 0
         if self.name != 'Zombie':
             self.distance = 90
+            self.add_type('enemy')
+        else:
+            self.add_type('friendly')
         self.y_v = self.x_v = 0
         self.frame_die = 0
         self.f_n_y = False
@@ -36,11 +41,14 @@ class WithSomeone(Person):
         self.rect = Rect((self.coord[0] + 0, self.coord[1] + 25, 20, 5))
         self.c_die = False
 
+    def get_in_hand(self):
+        return self.inventory.get_items(self.in_hand_index, 0)[0]
+
     def set_go(self, res: bool):
         self.f_go = res
 
     def set_weapon(self, weapon):
-        self.weapon = weapon
+        self.inventory.add_item(weapon)
 
     def shoot(self, aims):
         if self.weapon is not None and len(aims) > 0:

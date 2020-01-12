@@ -3,6 +3,8 @@ from player import Player
 from NPS_scripts import *
 from main_window import run
 from TestWeapon import *
+from sushet import DialogPerson
+from Framework import Button
 from menu import run_menu
 
 pygame.init()
@@ -55,6 +57,55 @@ class Missions:
     def __init__(self):
         self.summon_f = False
 
+        self.texts = []
+        self.text_index = 0
+        self.remove_this = False
+        self.text_drawing = False
+        self.need_update = True
+        self.next_text_widget = Button(
+            [load_image('sprite/buttons/next.png', -1), load_image('sprite/buttons/next.png', -1)], (1050, -10),
+            self.next_text)
+        self.surface = Surface((1080, 36))
+        self.text_widget = Text('', 22, (10, -10))
+        self.fon_text = Widget(self.surface, (7, -7))
+
+    def set_text(self, texts):
+        self.texts = texts
+        self.need_update = True
+
+    def update_test(self, then):
+        if not self.text_drawing and len(self.texts) > 0:
+            self.text_widget.update_text(self.get_text())
+            then.add_widget(self.text_widget, 3)
+            then.add_widget(self.fon_text, 2)
+            then.add_widget(self.next_text_widget, 3)
+            self.text_drawing = True
+        if self.remove_this:
+            then.remove_widget(self.text_widget)
+            then.remove_widget(self.fon_text)
+            then.remove_widget(self.next_text_widget)
+            self.text_drawing = False
+            self.need_update = False
+            self.remove_this = False
+
+    def next_text(self, then):
+        text = self.get_text()
+        if text == '':
+            self.remove_this = True
+        print(text)
+        self.text_widget.update_text(text)
+
+    def get_text(self):
+        if len(self.texts) > 0:
+            res = self.texts[0]
+            self.texts.pop(0)
+        else:
+            res = ''
+        return res
+
+    def passive(self, then):
+        pass
+
     def mission_1(self, then):
         Desert_eagle = WeaponObj('sprite/Weapon_sprites/Desert Eagle.bmp', (360, 360), 'DesertEagle', 1, 'simple',
                                  'simple', 2000, [1200, 1500], 60, then.screen, hero, 7, 90, camera, scene)
@@ -72,8 +123,16 @@ class Missions:
         main_site = Site()
         build = Build(((3840, 3800)), 'sprite\\Building_sprites\\House.png', then.scene,
                       'sprite/Building_sprites/House_in.png', Rect((25, 120), (35, 70)))
+        dialog_pers = DialogPerson('sprite/Interactive_objects/Mission_1.bmp', (3890, 3820), self, scene, self.passive,
+                                   ['Привет!', 'Что я должен делать?', 'Ты дожен будешь охранять эту крепость.',
+                                    'Это и домом сложно назвать, не то что крепостью!',
+                                    'Я тебя наняла для охраны, а не для критики',
+                                    'Возьми из сундука пистолет, он тебе пригодится!',
+                                    'Сходи, на востоке есть военная база, скажи, что от меня',
+                                    'и там тебе выдадут трех наймников и автомат.'])
         chest_1 = Chest('sprite/Interactive_objects/chest.bmp', ((3850, 3830)), scene, [Desert_eagle])
         main_site.add_object(build)
+        main_site.add_object(dialog_pers)
         main_site.add_object(chest_1)
         group_helper.summon(team_group, ['Team', 'sprite/NPS_sprites/forward/NPS_soldier_1/NPS_soldier_1_forward_1.bmp',
                                          hero.get_coord(), 'NPS_sprites', 'NPS_soldier_1', 10, hero, camera, None,
@@ -81,6 +140,11 @@ class Missions:
         base = Site()
         main_home = Build((6840, 3900), 'sprite\\Building_sprites\\army tent.png', scene,
                           'sprite\\Building_sprites\\army_tent_in.png', Rect((35, 85), (35, 70)))
+        dialog_pers_2 = DialogPerson('sprite/Interactive_objects/General.bmp', (6890, 3920), self, scene, self.passive,
+                                     ['Здравия желаю.', 'И вам привет.', 'С чем пришел?', 'Я от Юли.',
+                                      'Ок, вот тебе 3 наемника, а так же возьми автомат в ящике!',
+                                      'А так же скажи, что мой должок погашен.'])
+        base.add_object(dialog_pers_2)
         base.add_object(main_home)
         chest_2 = Chest('sprite/Interactive_objects/chest.bmp', ((6850, 3930)), scene, [AR15])
         base.add_object(chest_2)
@@ -108,7 +172,8 @@ class Missions:
 
     def wave(self, count, then):
         group_helper.summon(zombie_group, ['Zombie', 'sprite/Enemy_sprites/forward/Zombie/Zombie_forward_1.png',
-                                           hero.get_coord(), 'Enemy_sprites', 'Zombie', 10, hero, camera, None, 'png', 1000], count)
+                                           hero.get_coord(), 'Enemy_sprites', 'Zombie', 10, hero, camera, None, 'png',
+                                           1000], count)
         if not self.summon_f:
             print(then.scene.add_bot_group(zombie_group))
             self.summon_f = True
