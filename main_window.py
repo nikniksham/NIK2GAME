@@ -127,7 +127,7 @@ class Game(Application):
         self.skip_break_time = Button([load_image('sprite/buttons/Skip_break_time.png', (255, 255, 255)),
                                        load_image('sprite/buttons/Skip_break_time_active.png', (255, 255, 255))],
                                       (-980, 10), self.skip_time)
-        self.break_time = 60
+        self.break_time = 180
         self.scene = scene
         self.time_to_wave = Text('0', 30, (-800, 10))
         space = 10

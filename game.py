@@ -5,6 +5,7 @@ from NPS_scripts import *
 from main_window import run
 from TestWeapon import *
 from menu import run_menu
+from sushet import DialogPerson
 
 pygame.init()
 # загружаем нужные переменные
@@ -26,16 +27,20 @@ run_menu()
 camera = Camera(size_screen, (0, 0, 0))
 
 # словарь картинок объектов мира
-slow = {'bn': [Image('sprite/blocks_sprites/back_1.bmp').get_image(), Image('sprite/blocks_sprites/block_3.bmp').get_image(),
-               Image('sprite/blocks_sprites/back_2.bmp').get_image(), Image('sprite/blocks_sprites/back_4.bmp').get_image()],
-        'tn': [(Image('sprite/blocks_sprites/tree.bmp').get_image(), 13), (Image('sprite/blocks_sprites/tree_1.bmp').get_image(), 7),
+slow = {'bn': [Image('sprite/blocks_sprites/back_1.bmp').get_image(),
+               Image('sprite/blocks_sprites/block_3.bmp').get_image(),
+               Image('sprite/blocks_sprites/back_2.bmp').get_image(),
+               Image('sprite/blocks_sprites/back_4.bmp').get_image()],
+        'tn': [(Image('sprite/blocks_sprites/tree.bmp').get_image(), 13),
+               (Image('sprite/blocks_sprites/tree_1.bmp').get_image(), 7),
                (Image('sprite/blocks_sprites/stone_2.bmp').get_image(), None)],
         'cn': 0.01}
 
-map_slow = {'bn': [load_image('sprite\\blocks_sprites\\map_grass.png'), load_image('sprite\\blocks_sprites\\map_grass.png'),
-                   load_image('sprite\\blocks_sprites\\map_grass.png'), load_image('sprite\\blocks_sprites\\map_grass.png')],
-            'tn': [load_image('sprite\\blocks_sprites\\map_tree_1.png'), load_image('sprite\\blocks_sprites\\map_tree_2.png'),
-                   load_image('sprite\\blocks_sprites\\map_stone.png')]}
+map_slow = {
+    'bn': [load_image('sprite\\blocks_sprites\\map_grass.png'), load_image('sprite\\blocks_sprites\\map_grass.png'),
+           load_image('sprite\\blocks_sprites\\map_grass.png'), load_image('sprite\\blocks_sprites\\map_grass.png')],
+    'tn': [load_image('sprite\\blocks_sprites\\map_tree_1.png'), load_image('sprite\\blocks_sprites\\map_tree_2.png'),
+           load_image('sprite\\blocks_sprites\\map_stone.png')]}
 
 # генерация мира
 # image_map, main_chunk = make_level(slow, chunk_count, map_slow)
@@ -59,8 +64,10 @@ class Missions:
         self.remove_this = False
         self.text_drawing = False
         self.need_update = True
-        self.next_text_widget = Button([load_image('sprite/buttons/next.png', -1), load_image('sprite/buttons/next.png', -1)], (970, -10), self.next_text)
-        self.surface = Surface((1000, 36))
+        self.next_text_widget = Button(
+            [load_image('sprite/buttons/next.png', -1), load_image('sprite/buttons/next.png', -1)], (1050, -10),
+            self.next_text)
+        self.surface = Surface((1080, 36))
         self.text_widget = Text('', 22, (10, -10))
         self.fon_text = Widget(self.surface, (7, -7))
 
@@ -98,6 +105,9 @@ class Missions:
             res = ''
         return res
 
+    def passive(self, then):
+        pass
+
     def mission_1(self, then):
         Desert_eagle = WeaponObj('sprite/Weapon_sprites/Desert Eagle.bmp', (360, 360), 'DesertEagle', 1, 'simple',
                                  'simple', 2000, [1200, 1500], 60, then.screen, hero, 7, 90)
@@ -113,13 +123,27 @@ class Missions:
         main_site = Site()
         build = Build(((3840, 3800)), 'sprite\\Building_sprites\\House.png', then.scene,
                       'sprite/Building_sprites/House_in.png', Rect((25, 120), (35, 70)))
+
+        dialog_pers = DialogPerson('sprite/Interactive_objects/Mission_1.bmp', (3890, 3820), self, scene, self.passive,
+                                   ['Привет!', 'Что я должен делать?', 'Ты дожен будешь охранять эту крепость.',
+                                    'Это и домом сложно назвать, не то что крепостью!',
+                                    'Я тебя наняла для охраны, а не для критики',
+                                    'Возьми из сундука пистолет, он тебе пригодится!',
+                                    'Сходи, на востоке есть военная база, скажи, что от меня',
+                                    'и там тебе выдадут трех наймников и автомат.'])
+
         chest_1 = Chest('sprite/Interactive_objects/chest.bmp', ((3850, 3830)), scene, [Desert_eagle])
         main_site.add_object(build)
+        main_site.add_object(dialog_pers)
         main_site.add_object(chest_1)
-        self.set_text(['лол', 'оно работеть'])
         base = Site()
         main_home = Build((6840, 3900), 'sprite\\Building_sprites\\army tent.png', scene,
                           'sprite\\Building_sprites\\army_tent_in.png', Rect((35, 85), (35, 70)))
+        dialog_pers_2 = DialogPerson('sprite/Interactive_objects/General.bmp', (6890, 3920), self, scene, self.passive,
+                                     ['Здравия желаю.', 'И вам привет.', 'С чем пришел?', 'Я от Юли.',
+                                      'Ок, вот тебе 3 наёмника, а так же возьми автомат в ящике!',
+                                      'А так же скажи, что мой должок погашен.'])
+        base.add_object(dialog_pers_2)
         base.add_object(main_home)
         chest_2 = Chest('sprite/Interactive_objects/chest.bmp', ((6850, 3930)), scene, [AR15])
         base.add_object(chest_2)
@@ -146,7 +170,8 @@ class Missions:
 
     def wave(self, count, then):
         group_helper.summon(zombie_group, ['Zombie', 'sprite/Enemy_sprites/forward/Zombie/Zombie_forward_1.png',
-                                           hero.get_coord(), 'Enemy_sprites', 'Zombie', 10, hero, camera, None, 'png'], count)
+                                           hero.get_coord(), 'Enemy_sprites', 'Zombie', 10, hero, camera, None, 'png'],
+                            count)
         if not self.summon_f:
             print(then.scene.add_bot_group(zombie_group))
             self.summon_f = True
