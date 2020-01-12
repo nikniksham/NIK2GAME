@@ -201,11 +201,11 @@ class Game(Application):
                 if not self.button:
                     self.button = True
                     self.add_widget(self.skip_break_time)
-                self.time_to_wave.update_text(f'До волны осталось: {round(self.break_time - self.timer.get_stopwatch_time()[0], 1)} секунд!')
+                self.time_to_wave.update_text(f'До волны осталось: {int(self.break_time - self.timer.get_stopwatch_time()[0])} секунд!')
 
     def update_interface(self):
         if not self.pause:
-            self.draw_time.update_text(text=str(self.timer.get_time()[0]))
+            self.draw_time.update_text(text=str(int(self.timer.get_time()[0])))
             self.timer.update_timer()
             self.draw_frs.update_text(text=str(int(self.clock.get_fps())))
             self.hp_line.update_bar(self.hero.heal_point / self.hero.max_heal_point)

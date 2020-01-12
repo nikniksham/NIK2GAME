@@ -4,7 +4,7 @@ from pygame.transform import *
 import os
 
 pygame.init()
-FONT_STYLE = 'arial.ttf'
+FONT_STYLE = 'NeogreyMedium.otf'
 
 
 def load_image(name, colorkey=None):
