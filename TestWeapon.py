@@ -3,9 +3,9 @@ from MainClasss import *
 
 class WeaponObj(Weapon):
     def __init__(self, image, coord, name, max_count, type_bullet, type_damage, attack_radius,
-                 range_damage, attack_speed, screen, owner, holder, time_on_reload, info=''):
+                 range_damage, attack_speed, screen, owner, holder, time_on_reload, camera, scene, info=''):
         super().__init__(image, coord, name, max_count, type_bullet, type_damage, attack_radius,
-                         range_damage, attack_speed, owner, info)
+                         range_damage, attack_speed, owner, camera, scene, info)
         self.shoot_frames = []
         self.original_image = Image(image).get_image()
         self.add_type('Weapon')

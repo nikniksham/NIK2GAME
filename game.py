@@ -44,6 +44,7 @@ image_map, main_chunk = load_level('world_TEST.wrld', slow, map_slow)
 group_helper = GroupHelper()
 # создаём самого героя
 zombie_group = BotGroup('enemy', 'Зомби')
+team_group = BotGroup('team', 'Солдат')
 hero = Player('MainHero', (35, 35), 'person_sprites', 'Player')
 
 # создаём сцену
@@ -56,9 +57,11 @@ class Missions:
 
     def mission_1(self, then):
         Desert_eagle = WeaponObj('sprite/Weapon_sprites/Desert Eagle.bmp', (360, 360), 'DesertEagle', 1, 'simple',
-                                 'simple', 2000, [1200, 1500], 60, then.screen, hero, 7, 90)
+                                 'simple', 2000, [1200, 1500], 60, then.screen, hero, 7, 90, camera, scene)
         AR15 = WeaponObj('sprite/Weapon_sprites/AR15.png', [100, 100], 'AR15', 1, 'simple', 'simple', 2500, [800, 1000],
-                         3, then.screen, hero, 3000, 180)
+                         3, then.screen, hero, 3000, 180, camera, scene)
+        USP = WeaponObj('sprite/Weapon_sprites/USP.bmp', (360, 360), 'USP', 1, 'simple', 'simple', 1800, [40, 60],
+                        10, then.screen, hero, 12, 30, camera, scene)
         # bots = BotGroup('enemy', 'колючие платформы')
         # for x in range(300, 600, 60):
         #       print(bots.add_bot(EnemyBlock('sprite/blocks_sprites/spike.bmp', (x, 100), 1)))
@@ -72,7 +75,9 @@ class Missions:
         chest_1 = Chest('sprite/Interactive_objects/chest.bmp', ((3850, 3830)), scene, [Desert_eagle])
         main_site.add_object(build)
         main_site.add_object(chest_1)
-
+        group_helper.summon(team_group, ['Team', 'sprite/NPS_sprites/forward/NPS_soldier_1/NPS_soldier_1_forward_1.bmp',
+                                         hero.get_coord(), 'NPS_sprites', 'NPS_soldier_1', 10, hero, camera, None,
+                                         'bmp', 300], 3)
         base = Site()
         main_home = Build((6840, 3900), 'sprite\\Building_sprites\\army tent.png', scene,
                           'sprite\\Building_sprites\\army_tent_in.png', Rect((35, 85), (35, 70)))
@@ -94,6 +99,7 @@ class Missions:
         rect_2 = Rect((6600, 3880), (500, 400))
         then.scene.main_chunk.set_clear_chunk(build.get_rect())
         then.scene.main_chunk.set_clear_chunk(rect_2)
+        print(then.scene.add_bot_group(team_group))
         print(then.scene.add_site(main_site))
         print(then.scene.add_site(base))
 
@@ -102,7 +108,7 @@ class Missions:
 
     def wave(self, count, then):
         group_helper.summon(zombie_group, ['Zombie', 'sprite/Enemy_sprites/forward/Zombie/Zombie_forward_1.png',
-                                           hero.get_coord(), 'Enemy_sprites', 'Zombie', 10, hero, camera, None, 'png'], count)
+                                           hero.get_coord(), 'Enemy_sprites', 'Zombie', 10, hero, camera, None, 'png', 1000], count)
         if not self.summon_f:
             print(then.scene.add_bot_group(zombie_group))
             self.summon_f = True

@@ -12,9 +12,14 @@ class WithSomeone(Person):
         self.count_x = 0
         self.count_y = 0
         self.aim = aim
+        self.point = [0, 0]
+        self.new_point = False
+        self.weapon = None
         self.tick = 0
         self.name = name
         self.distance = 0
+        if self.name != 'Zombie':
+            self.distance = 90
         self.y_v = self.x_v = 0
         self.frame_die = 0
         self.f_n_y = False
@@ -25,9 +30,29 @@ class WithSomeone(Person):
         self.f_n_x = False
         self.add_type('NPS')
         self.die_f = False
+        self.f_go = False
+        if self.name == 'Team':
+            self.f_go = True
         self.rect = Rect((self.coord[0] + 0, self.coord[1] + 25, 20, 5))
         self.c_die = False
-        self.random_point = [2500, 2500]
+
+    def set_go(self, res: bool):
+        self.f_go = res
+
+    def set_weapon(self, weapon):
+        self.weapon = weapon
+
+    def shoot(self, aims):
+        if self.weapon is not None and len(aims) > 0:
+            shoot_aim = aims[0]
+            distance_aim = get_gipotinuza(shoot_aim.coord, self.coord)
+            for aim in aims:
+                distance = get_gipotinuza(self.coord, aim.coord)
+                if distance < distance_aim:
+                    shoot_aim = aim
+                    distance_aim = distance
+            if distance_aim <= 750:
+                self.weapon.shoot(True, self, 'sprite/bullets/standard_bullet.bmp')
 
     def update(self, bots, objects, main_group, camera):
         someone = self.aim
@@ -39,6 +64,8 @@ class WithSomeone(Person):
                 platforms.append(object)
         # platforms = main_group.get_object(self.rect) + objects
         # platforms.remove(self.aim)
+        if not self.f_go:
+            self.point = someone.get_coord()
         if not self.die_f:
             self.x_vel, self.y_vel = 0, 0
             if get_gipotinuza((self.rect.x, self.rect.y), (someone.rect.x, someone.rect.y)) > self.distance and\
@@ -56,6 +83,7 @@ class WithSomeone(Person):
                     someone.damage(0.1)
             self.check_move_1(platforms)
             self.draw()
+            return
         else:
             self.die_animation()
 
@@ -65,31 +93,32 @@ class WithSomeone(Person):
     def get_rect(self):
         return Rect(self.rect.x, self.rect.y - 25, 20, 30)
 
-    def mov_to_point(self, platforms):
+    def mov_to_point(self, platforms, someone):
         self.x_vel = 0
         self.y_vel = 0
         if not self.die_f:
             if not self.f_x_1 and not self.f_x_2 and not self.f_y_1 and not self.f_y_2:
-                if self.get_coord()[0] > self.random_point[0]:
+                if self.get_coord()[0] > self.point[0]:
                     self.x_vel = -SPEED
-                elif self.get_coord()[0] < self.random_point[0]:
+                elif self.get_coord()[0] < self.point[0]:
                     self.x_vel = SPEED
-                if self.get_coord()[1] > self.random_point[1]:
+                if self.get_coord()[1] > self.point[1]:
                     self.y_vel = -SPEED
-                elif self.get_coord()[1] < self.random_point[1]:
+                elif self.get_coord()[1] < self.point[1]:
                     self.y_vel = SPEED
             self.check_move_1(platforms)
             self.coord = self.rect.x, self.rect.y
+            if get_gipotinuza(self.coord, someone.coord) <= 120 and self.f_x_1 and self.f_x_2 and self.f_y_1 and \
+                    self.f_y_2:
+                self.point = self.coord
             self.draw()
-            if self.random_point[0] - 30 < self.get_coord()[0] < self.random_point[0] + 30 and \
-                    self.random_point[1] - 30 < self.get_coord()[1] < self.random_point[1] + 30:
-                self.random_point = [random.choice(range(5000)), random.choice(range(5000))]
+            return
         else:
             self.die_animation()
 
     def die_animation(self):
         self.tick += 1
-        if self.tick >= 15:
+        if self.tick >= 7:
             self.tick = 0
             if self.frame_die >= len(self.die_frames) - 1:
                 self.image = self.die_frames[self.frame_die].get_image()
@@ -136,9 +165,9 @@ class WithSomeone(Person):
             elif self.f_y_2:
                 y_vel = -SPEED
             else:
-                if self.get_coord()[1] > self.random_point[1] and not self.f_n_x:
+                if self.get_coord()[1] > self.point[1] and not self.f_n_x:
                     y_vel = -SPEED
-                elif self.get_coord()[1] < self.random_point[1]:
+                elif self.get_coord()[1] < self.point[1]:
                     self.f_n_x = True
                     y_vel = SPEED
                 else:
@@ -150,9 +179,9 @@ class WithSomeone(Person):
             elif self.f_x_2:
                 x_vel = -SPEED
             else:
-                if self.get_coord()[0] > self.random_point[0] and not self.f_n_y:
+                if self.get_coord()[0] > self.point[0] and not self.f_n_y:
                     x_vel = -SPEED
-                elif self.get_coord()[0] < self.random_point[0]:
+                elif self.get_coord()[0] < self.point[0]:
                     self.f_n_y = True
                     x_vel = SPEED
                 else:
@@ -294,7 +323,8 @@ class GroupHelper:
         pass
 
     def summon(self, group, object_list, quantity):
-        name, image, coord, way_to_image, way_name, level, aim, camera, armor, type = object_list
+        name, image, coord, way_to_image, way_name, level, aim, camera, armor, type, range_c = object_list
         for _ in range(quantity):
-            group.add_bot(WithSomeone(name, image, [coord[0] + random.choice(range(-1000, 1000)),
-                                         coord[1] + random.choice(range(-1000, 1000))], way_to_image, way_name, level, aim, camera, armor, type))
+            group.add_bot(WithSomeone(name, image, [coord[0] + random.choice(range(-range_c, range_c)),
+                                      coord[1] + random.choice(range(-range_c, range_c))], way_to_image, way_name,
+                                      level, aim, camera, armor, type))

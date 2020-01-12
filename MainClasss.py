@@ -67,7 +67,7 @@ class Timer:
         self.f_stopwatch = False
 
     def update_timer(self):
-        self.ticks += self.game.get_fps() / self.max_fps
+        self.ticks += 1
         if self.f_stopwatch:
             self.stopwatch_ticks += 1
 
@@ -760,7 +760,7 @@ class Level(MainObject):
         res = []
         # проходимся по группам из списка групп
         res += self.main_group.get_all_objects()
-        print(f'объекты сцены: {len(res)}')
+        # print(f'объекты сцены: {len(res)}')
         res += self.get_map_images_objects(object)
         # возвращаем результат
         return res
@@ -1054,6 +1054,8 @@ class Chest(Build):
 # self.armor_heal_point = armor_hp
 # и что такое и чем отличается
 # self.armor - bool, int, str?
+
+
 class Armor(Item):
     def __init__(self, image, coord, name, max_count, armor, armor_hp, armor_max_hp, info=''):
         # тип объекта: Armor
@@ -1154,12 +1156,14 @@ class Bullet(Item):
 
 class Weapon(Bullet):
     def __init__(self, image, coord, name, max_count, type_bullet, type_damage, attack_radius,
-                 range_damage, attack_speed, owner, info=''):
+                 range_damage, attack_speed, owner, camera, scene, info=''):
         # тип объекта: Weapon
         super().__init__(image, coord, name, max_count, type_bullet, info)
         self.add_type('Weapon')
+        self.scene = scene
         # типы урона: knife, firearm, missile, ret_damage
         self.type_damage = type_damage
+        self.camera = camera
         # Дальность атаки
         self.attack_radius = attack_radius
         # кортеж из чисел (минимальный урон, максимальный урон)
@@ -1170,23 +1174,23 @@ class Weapon(Bullet):
         # Владелец
         self.owner = owner
 
-    def shoot(self, camera, shoot_bool:bool, hero, image, scene):
+    def shoot(self, shoot_bool:bool, hero, image, coord_click=None):
         shoot_f = shoot_bool
         angle = 0
         if shoot_f:
-            if hero.get_in_hand().shoot_delay(scene):
+            if hero.get_in_hand().shoot_delay(self.scene):
                 hero.get_in_hand().count_shoot += 1
                 hero.get_in_hand().tick = 0
-                angle = hero.get_in_hand().spawn_bullet(camera, hero, image, scene)
+                angle = hero.get_in_hand().spawn_bullet(hero, image)
         else:
-            hero.get_in_hand().shoot_delay(scene)
+            hero.get_in_hand().shoot_delay(self.scene)
         hero.get_in_hand().set_coord([hero.get_coord()[0] - 3, hero.get_coord()[1] + 7])
         hero.get_in_hand().rotate_image(angle)
 
-    def spawn_bullet(self, camera, hero, image, scene):
+    def spawn_bullet(self, hero, image):
         self.bullet += 1
         mouse_x, mouse_y = pygame.mouse.get_pos()
-        coord_person = camera.object_coord(hero.get_coord())
+        coord_person = self.camera.object_coord(hero.get_coord())
         mouse_x -= 5
         mouse_y -= 10
         coord = hero.get_coord()
@@ -1194,7 +1198,8 @@ class Weapon(Bullet):
         angle = int(rad * 180 / math.pi)
         x_vel, y_vel = 10 * cos, 10 * sin
         # print(self.bullet, 'пуля')
-        scene.add_bullet(Bullet(image, [coord[0] + 5, coord[1] + 10], 'bullet', 10, 'standard', hero.get_in_hand(), x_vel, y_vel, self.attack_radius))
+        self.scene.add_bullet(Bullet(image, [coord[0] + 5, coord[1] + 10], 'bullet', 10, 'standard', hero.get_in_hand(),
+                                     x_vel, y_vel, self.attack_radius))
         return angle
 
     def get_bullet_count(self):

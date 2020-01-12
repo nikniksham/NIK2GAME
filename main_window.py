@@ -2,7 +2,7 @@ from Framework import Application, Widget, load_image, scale_to, Text, create_te
 from win32api import GetSystemMetrics
 import pygame
 from pygame import Surface
-from MainClasss import Timer
+from MainClasss import Timer, get_gipotinuza
 
 
 REPOSITORY = 'sprite\\User_Interface\\'
@@ -69,7 +69,7 @@ class Slot(Widget):
         return self.image
 
     def update(self, event):
-        print(self.pos)
+        # print(self.pos)
         if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
             self.app.hero.in_hand_index = self.pos[0]
 
@@ -91,8 +91,8 @@ class GameScreen(Widget):
     def hero_update(self):
         # стрельба
         if self.app.hero.get_in_hand() is not None and self.app.hero.get_in_hand().is_type('Weapon') and self.app.hero.home is None:
-            self.app.hero.get_in_hand().shoot(self.camera, self.app.mouse_pressed(1), self.app.hero,
-                                              'sprite/bullets/standard_bullet.bmp', self.scene)
+            self.app.hero.get_in_hand().shoot(self.app.mouse_pressed(1), self.app.hero,
+                                              'sprite/bullets/standard_bullet.bmp')
         # ходьба и бег
         left = self.app.key_pressed(pygame.K_a)
         right = self.app.key_pressed(pygame.K_d)
@@ -115,9 +115,9 @@ class Game(Application):
         self.camera = camera
         self.timer = Timer()
         self.timer.set_game(self)
-        self.wave_list = [150, 300]
+        self.wave_list = [60, 120]
         self.wave = 0
-        self.wave_count = 75
+        self.wave_count = 30
         self.skip_break_time = Button([load_image('sprite/buttons/Skip_break_time.png', (255, 255, 255)),
                                        load_image('sprite/buttons/Skip_break_time_active.png', (255, 255, 255))],
                                       (-980, 10), self.skip_time)

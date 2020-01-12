@@ -627,7 +627,7 @@ class ProgressBar(AnimationWidgets):
         self.percentage = percentage
         h = self.back_bar.get_height()
         w = self.back_bar.get_width() * self.percentage
-        print(w, self.back_bar.get_width())
+        # print(w, self.back_bar.get_width())
         color = self.get_color()
         for x in range(int((w + 1))):
             pygame.draw.line(image, color, [x, 0], [x, h])
