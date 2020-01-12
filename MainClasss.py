@@ -684,7 +684,7 @@ class MainGroup(MainObject):
             group.update(objects, main_chunk, camera)
         objects = self.get_all_objects()
         for bot in self.team[1:]:
-            bot.update(objects[:], main_chunk, camera)
+            bot.update(self.team, objects[:], main_chunk, camera)
         for site in self.get_sites():
             site.update(objects[:], main_chunk, camera)
 
@@ -1181,25 +1181,35 @@ class Weapon(Bullet):
             if hero.get_in_hand().shoot_delay(self.scene):
                 hero.get_in_hand().count_shoot += 1
                 hero.get_in_hand().tick = 0
-                angle = hero.get_in_hand().spawn_bullet(hero, image)
+                angle = hero.get_in_hand().spawn_bullet(hero, image, coord_click)
         else:
             hero.get_in_hand().shoot_delay(self.scene)
-        hero.get_in_hand().set_coord([hero.get_coord()[0] - 3, hero.get_coord()[1] + 7])
+        hero.get_in_hand().set_coord([hero.get_coord()[0] - 5, hero.get_coord()[1] + 10])
         hero.get_in_hand().rotate_image(angle)
 
-    def spawn_bullet(self, hero, image):
+    def spawn_bullet(self, hero, image, coord_click=None):
         self.bullet += 1
-        mouse_x, mouse_y = pygame.mouse.get_pos()
-        coord_person = self.camera.object_coord(hero.get_coord())
-        mouse_x -= 5
-        mouse_y -= 10
-        coord = hero.get_coord()
-        sin, cos, rad = hero.get_in_hand().flight_path([mouse_x, mouse_y], coord_person)
-        angle = int(rad * 180 / math.pi)
-        x_vel, y_vel = 10 * cos, 10 * sin
-        # print(self.bullet, 'пуля')
-        self.scene.add_bullet(Bullet(image, [coord[0] + 5, coord[1] + 10], 'bullet', 10, 'standard', hero.get_in_hand(),
-                                     x_vel, y_vel, self.attack_radius))
+        angle = 0
+        if coord_click is not None:
+            pos_x, pos_y = coord_click
+            coord_person = hero.get_coord()
+            sin, cos, rad = hero.get_in_hand().flight_path([pos_x, pos_y], coord_person)
+            angle = int(rad * 180 / math.pi)
+            x_vel, y_vel = 10 * cos, 10 * sin
+            self.scene.add_bullet(Bullet(image, [coord_person[0] + 5, coord_person[1] + 10], 'bullet', 10, 'standard',
+                                         hero.get_in_hand(), x_vel, y_vel, self.attack_radius))
+        else:
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+            coord_person = self.camera.object_coord(hero.get_coord())
+            mouse_x -= 5
+            mouse_y -= 10
+            coord = hero.get_coord()
+            sin, cos, rad = hero.get_in_hand().flight_path([mouse_x, mouse_y], coord_person)
+            angle = int(rad * 180 / math.pi)
+            x_vel, y_vel = 10 * cos, 10 * sin
+            # print(self.bullet, 'пуля')
+            self.scene.add_bullet(Bullet(image, [coord[0] + 5, coord[1] + 10], 'bullet', 10, 'standard', hero.get_in_hand(),
+                                         x_vel, y_vel, self.attack_radius))
         return angle
 
     def get_bullet_count(self):
@@ -1213,6 +1223,7 @@ class Weapon(Bullet):
         enemy.damage(damage, enemy)
 
     def flight_path(self, mouse_pos, hero_pos):
+        # print(mouse_pos, hero_pos)
         x, y = hero_pos
         m_x, m_y = mouse_pos
         rad = math.atan2(m_y - y, m_x - x)

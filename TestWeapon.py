@@ -52,6 +52,7 @@ class WeaponObj(Weapon):
     def check_reload(self):
         if self.count_shoot % self.holder == 0:
             self.pause = self.time_on_reload
+            self.count_shoot = 0
             self.rotate_image(0)
             self.delay = self.time_on_reload
         else:

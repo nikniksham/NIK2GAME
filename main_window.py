@@ -57,8 +57,9 @@ class Slot(Widget):
             image = self.images_orig[0].copy()
             size = item.original_image.get_size()
             y = size[1] / size[0]
-            image.blit(scale_to(item.original_image, (self.size_image[0] - 10, int(self.size_image[1] * y))), (5, (self.size_image[1] - int(self.size_image[1] * y)) // 3))
-            count = create_text(str(item.get_count()), 15, (255, 255, 255))
+            image.blit(scale_to(item.original_image, (self.size_image[0] - 10, int(self.size_image[1] * y))),
+                       (5, (self.size_image[1] - int(self.size_image[1] * y)) // 3))
+            count = create_text(str(item.holder - item.count_shoot), 15, (255, 255, 255))
             size = count.get_size()
             image.blit(count, (self.size_image[0] - size[0] - 5, self.size_image[1] - size[1] - 4))
             # лагакет

@@ -12,6 +12,9 @@ class WithSomeone(Person):
         self.count_x = 0
         self.count_y = 0
         self.aim = aim
+        self.add_type('NPS')
+        self.inventory = Inventory((1, 1))
+        self.in_hand_index = 0
         self.point = [0, 0]
         self.new_point = False
         self.weapon = None
@@ -20,6 +23,7 @@ class WithSomeone(Person):
         self.distance = 0
         if self.name != 'Zombie':
             self.distance = 90
+            self.add_type('enemy')
         self.y_v = self.x_v = 0
         self.frame_die = 0
         self.f_n_y = False
@@ -30,29 +34,30 @@ class WithSomeone(Person):
         self.f_n_x = False
         self.add_type('NPS')
         self.die_f = False
-        self.f_go = False
-        if self.name == 'Team':
-            self.f_go = True
         self.rect = Rect((self.coord[0] + 0, self.coord[1] + 25, 20, 5))
         self.c_die = False
 
-    def set_go(self, res: bool):
-        self.f_go = res
+    def get_in_hand(self):
+        return self.inventory.get_items(self.in_hand_index, 0)[0]
 
     def set_weapon(self, weapon):
         self.weapon = weapon
+        self.inventory.add_item(weapon)
 
     def shoot(self, aims):
         if self.weapon is not None and len(aims) > 0:
             shoot_aim = aims[0]
-            distance_aim = get_gipotinuza(shoot_aim.coord, self.coord)
+            distance_aim = get_gipotinuza(shoot_aim.get_coord(), self.coord)
             for aim in aims:
-                distance = get_gipotinuza(self.coord, aim.coord)
+                distance = get_gipotinuza(self.coord, aim.get_coord())
                 if distance < distance_aim:
                     shoot_aim = aim
                     distance_aim = distance
             if distance_aim <= 750:
-                self.weapon.shoot(True, self, 'sprite/bullets/standard_bullet.bmp')
+                x, y = shoot_aim.get_coord()
+                x_coord = x + (distance_aim // 7 * shoot_aim.x_vel) + 5
+                y_coord = y + (distance_aim // 7 * shoot_aim.y_vel) + 10
+                self.weapon.shoot(True, self, 'sprite/bullets/standard_bullet.bmp', [x_coord, y_coord])
 
     def update(self, bots, objects, main_group, camera):
         someone = self.aim
@@ -64,8 +69,6 @@ class WithSomeone(Person):
                 platforms.append(object)
         # platforms = main_group.get_object(self.rect) + objects
         # platforms.remove(self.aim)
-        if not self.f_go:
-            self.point = someone.get_coord()
         if not self.die_f:
             self.x_vel, self.y_vel = 0, 0
             if get_gipotinuza((self.rect.x, self.rect.y), (someone.rect.x, someone.rect.y)) > self.distance and\
