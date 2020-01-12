@@ -1,4 +1,5 @@
 from create_level import *
+from Framework import Button
 from player import Player
 from NPS_scripts import *
 from main_window import run
@@ -53,6 +54,49 @@ scene = Level('first_scene', hero, main_chunk, camera)
 class Missions:
     def __init__(self):
         self.summon_f = False
+        self.texts = []
+        self.text_index = 0
+        self.remove_this = False
+        self.text_drawing = False
+        self.need_update = True
+        self.next_text_widget = Button([load_image('sprite/buttons/next.png', -1), load_image('sprite/buttons/next.png', -1)], (970, -10), self.next_text)
+        self.surface = Surface((1000, 36))
+        self.text_widget = Text('', 22, (10, -10))
+        self.fon_text = Widget(self.surface, (7, -7))
+
+    def set_text(self, texts):
+        self.texts = texts
+        self.need_update = True
+
+    def update_test(self, then):
+        if not self.text_drawing and len(self.texts) > 0:
+            self.text_widget.update_text(self.get_text())
+            then.add_widget(self.text_widget, 3)
+            then.add_widget(self.fon_text, 2)
+            then.add_widget(self.next_text_widget, 3)
+            self.text_drawing = True
+        if self.remove_this:
+            then.remove_widget(self.text_widget)
+            then.remove_widget(self.fon_text)
+            then.remove_widget(self.next_text_widget)
+            self.text_drawing = False
+            self.need_update = False
+            self.remove_this = False
+
+    def next_text(self, then):
+        text = self.get_text()
+        if text == '':
+            self.remove_this = True
+        print(text)
+        self.text_widget.update_text(text)
+
+    def get_text(self):
+        if len(self.texts) > 0:
+            res = self.texts[0]
+            self.texts.pop(0)
+        else:
+            res = ''
+        return res
 
     def mission_1(self, then):
         Desert_eagle = WeaponObj('sprite/Weapon_sprites/Desert Eagle.bmp', (360, 360), 'DesertEagle', 1, 'simple',
@@ -72,7 +116,7 @@ class Missions:
         chest_1 = Chest('sprite/Interactive_objects/chest.bmp', ((3850, 3830)), scene, [Desert_eagle])
         main_site.add_object(build)
         main_site.add_object(chest_1)
-
+        self.set_text(['лол', 'оно работеть'])
         base = Site()
         main_home = Build((6840, 3900), 'sprite\\Building_sprites\\army tent.png', scene,
                           'sprite\\Building_sprites\\army_tent_in.png', Rect((35, 85), (35, 70)))

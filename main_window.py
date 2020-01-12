@@ -151,6 +151,7 @@ class Game(Application):
         self.hero = scene.get_main_hero()
         self.lkm_used = False
         self.f_stopwatch = False
+        self.dialog = True
         self.add_widget(self.skip_break_time, 2)
         self.add_event(self.funks)
         self.add_event(self.update_interface)
@@ -171,6 +172,8 @@ class Game(Application):
 
     def update_mission_one(self):
         if not self.pause:
+            if self.missions.need_update:
+                self.missions.update_test(self)
             if not self.f_stopwatch:
                 self.timer.start_stopwatch()
                 self.f_stopwatch = True

@@ -760,7 +760,7 @@ class Level(MainObject):
         res = []
         # проходимся по группам из списка групп
         res += self.main_group.get_all_objects()
-        print(f'объекты сцены: {len(res)}')
+        # print(f'объекты сцены: {len(res)}')
         res += self.get_map_images_objects(object)
         # возвращаем результат
         return res
