@@ -65,7 +65,7 @@ class Application:
         # часы для граничения FPS
         self.clock = pygame.time.Clock()
         # количество кадров в секунду 0 - неограничено
-        self.FPS = 90
+        self.FPS = 80
         # приложение работает
         self.running = True
         # картинка мыши если None то обычная мышь
@@ -152,7 +152,7 @@ class Application:
 
     def remove_event(self, event):
         if event in self.events:
-            self.add_event(event)
+            self.events.remove(event)
             return True
         return False
 
@@ -242,7 +242,6 @@ class Application:
                         self.pressed_key.remove(event.key)
                     self.key_up_event(event)
             # обработка функций
-            # print(len(self.events))
             for funk in self.events:
                 funk()
             # отрисовка экрана
@@ -311,8 +310,10 @@ class Application:
                 widget.set_active(pos)
             if widget.get_active() and not good:
                 good = True
-                # print(widget.rect)
+                print(widget.rect)
                 widget.update(event)
+
+
 
     # проверить нажата ли кнопка мыши
     def mouse_pressed(self, number_mouse):

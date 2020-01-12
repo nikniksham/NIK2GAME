@@ -69,13 +69,17 @@ class Timer:
     def update_timer(self):
         self.ticks += self.game.get_fps() / self.max_fps
         if self.f_stopwatch:
-            self.stopwatch_ticks += 1
+            self.stopwatch_ticks += self.game.get_fps() / self.max_fps
 
     def set_game(self, game):
         self.game = game
 
     def get_time(self):
-        self.synchronization(self.ticks)
+        self.synchronization(self.stopwatch_ticks)
+        return self.time_sec, self.time_min, self.time_hour, self.time_day
+
+    def get_stopwatch_time(self):
+        self.synchronization(self.stopwatch_ticks)
         return self.time_sec, self.time_min, self.time_hour, self.time_day
 
     def synchronization(self, ticks):
@@ -90,10 +94,7 @@ class Timer:
 
     def start_stopwatch(self):
         self.f_stopwatch = True
-
-    def get_stopwatch_time(self):
-        self.synchronization(self.stopwatch_ticks)
-        return self.time_sec, self.time_min, self.time_hour, self.time_day
+        self.stopwatch_ticks = 0
 
     def stop_stopwatch(self):
         self.f_stopwatch = False
@@ -204,7 +205,7 @@ class Animation(Image):
         if -1 < index < len(self.images):
             self.frame = index
         else:
-            print('Ты скорее всего ошибся на еденицу)')
+            print('Ты скорее всего ошибся на единицу')
             quit()
 
     def set_speed(self, speed):
@@ -345,8 +346,8 @@ class BotGroup(MainObject):
 
     def get_life_bot(self):
         count = 0
-        for elem in self.bots:
-            if not elem.die_f:
+        for bot in self.bots:
+            if not bot.die_f:
                 count += 1
         return count
 
@@ -374,7 +375,6 @@ class BotGroup(MainObject):
 
 class Build(Object):
     def __init__(self, coord, image_out, scena, image_in=None, door_rect=None):
-        # asf
         # жутко не оптимизированая штука
         super().__init__(image_out, coord)
         self.set_layer(0)
@@ -436,14 +436,14 @@ class Build(Object):
             object.rect.bottom = self.down_wall.rect.top
             object.rect.left = self.door_rect.left
             object.set_in_home(self)
-            # print(2)
+            print(2)
             return True
         # выход из дома
         elif self.can_join and self.door_rect.colliderect(object.get_rect()) and not self.in_hom:
             object.rect.top = self.down_wall.rect.bottom
             object.rect.left = self.door_rect.left
             object.set_in_home(None)
-            # print(3)
+            print(3)
             return True
         return False
 
@@ -757,7 +757,7 @@ class Level(MainObject):
         res = []
         # проходимся по группам из списка групп
         res += self.main_group.get_all_objects()
-        print(f'объекты сцены: {len(res)}')
+        # print(f'объекты сцены: {len(res)}')
         res += self.get_map_images_objects(object)
         # возвращаем результат
         return res
@@ -1040,6 +1040,7 @@ class Chest(Build):
                     self.scena.remove_button(self.button_out)
                     self.button_out_drawing = False
                     self.button_in_drawing = False
+
 
 # исправил на:
 # self.armor += upgrade_point
@@ -1580,9 +1581,9 @@ class EnemyBlock(Object):
 class ImageButton(Object):
     def __init__(self, images, coord, action):
         super().__init__(images, coord)
-        self.add_type('Static')
         self.coord = coord
         self.action = action
+        self.add_type('Static')
 
     def update(self, zero_coord):
         # asd

@@ -42,8 +42,8 @@ image_map, main_chunk = load_level('world_TEST.wrld', slow, map_slow)
 group_helper = GroupHelper()
 # создаём самого героя
 zombie_group = BotGroup('enemy', 'Зомби')
-
 hero = Player('MainHero', (35, 35), 'person_sprites', 'Player')
+
 # создаём сцену
 scene = Level('first_scene', hero, main_chunk, camera)
 
@@ -54,7 +54,7 @@ class Missions:
 
     def mission_1(self, then):
         Desert_eagle = WeaponObj('sprite/Weapon_sprites/Desert Eagle.bmp', (360, 360), 'DesertEagle', 1, 'simple',
-                                 'simple', 2000, [120, 150], 60, then.screen, hero, 7, 90)
+                                 'simple', 2000, [1200, 1500], 30, then.screen, hero, 7, 90)
         AR15 = WeaponObj('sprite/Weapon_sprites/AR15.png', [100, 100], 'AR15', 1, 'simple', 'simple', 2500, [800, 1000],
                          3, then.screen, hero, 3000, 180)
         healpoint_NPS = Image('sprite/NPS_sprites/healpoint_nps.bmp')
@@ -97,11 +97,11 @@ class Missions:
 
     def wave(self, count, then):
         group_helper.summon(zombie_group, ['Zombie', 'sprite/Enemy_sprites/forward/Zombie/Zombie_forward_1.png',
-                                           hero.get_coord(), 'Enemy_sprites', 'Zombie', 10, hero, None, 'png'], count)
+                                           hero.get_coord(), 'Enemy_sprites', 'Zombie', 10, hero, camera, None, 'png'], count)
         if not self.summon_f:
+            print(then.scene.add_bot_group(zombie_group))
             self.summon_f = True
-            then.scene.add_bot_group(zombie_group)
 
 
 # запускаем игру
-run(camera, scene, image_map, Missions())
+run(camera, scene, Missions())
