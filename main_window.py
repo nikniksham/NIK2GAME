@@ -87,7 +87,7 @@ class GameScreen(Widget):
 
     def update(self, event):
         if event.type == pygame.KEYDOWN and event.key == self.app.hot_keys[3]:
-            print('wtf')
+            # print('wtf')
             self.app.pause = not self.app.pause
         if not self.app.pause:
             if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
@@ -152,6 +152,7 @@ class Game(Application):
         self.hero = scene.get_main_hero()
         self.lkm_used = False
         self.f_stopwatch = False
+        self.missions.mission_1(self)
         self.dialog = True
         self.add_widget(self.skip_break_time, 2)
         self.add_event(self.funks)
@@ -165,9 +166,6 @@ class Game(Application):
         if self.key_pressed(self.hot_keys[0]):
             self.camera.create()
             self.update_screen(self.widht, self.height)
-        elif self.key_pressed(self.hot_keys[1]) and self.mission_index == 0:
-            self.mission_index += 1
-            self.missions.mission_1(self)
         elif self.key_pressed(self.hot_keys[2]):
             self.running = False
 

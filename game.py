@@ -91,7 +91,7 @@ class Missions:
         text = self.get_text()
         if text == '':
             self.remove_this = True
-        print(text)
+        # print(text)
         self.text_widget.update_text(text)
 
     def get_text(self):
