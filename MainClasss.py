@@ -373,7 +373,7 @@ class BotGroup(MainObject):
 
 
 class Build(Object):
-    def __init__(self, coord, image_out, scena, image_in=None, door_rect=None):
+    def __init__(self, coord, image_out, scena, image_in=None, door_rect=None, layer_close=3, layer_open=1):
         # asf
         # жутко не оптимизированая штука
         super().__init__(image_out, coord)
@@ -382,6 +382,8 @@ class Build(Object):
         self.rect = Rect((coord[0], coord[1] + 10), (self.image.get_size()[0], self.image.get_size()[1] - 10))
         # перс в доме
         self.in_hom = False
+        self.layers = [layer_close, layer_open]
+        self.layer = self.layers[self.in_hom]
         # тип здание для collision что-бы перс в доме рисовался певерх него
         self.add_type('Static')
         self.add_type('Build')
@@ -459,6 +461,7 @@ class Build(Object):
         # если в дом можно зайти
         if self.can_join:
             self.in_hom = not self.in_hom
+            self.layer = self.layers[self.in_hom]
             # устанавливаем картинку
             if self.in_hom:
                 self.image = self.image_in
@@ -988,7 +991,7 @@ class Inventory:
 class Chest(Build):
     def __init__(self, image_close, coord, scena, inventory=[]):
         # asf
-        super().__init__(coord, image_close, scena)
+        super().__init__(coord, image_close, scena, layer_close=2, layer_open=2)
         self.inventory = inventory
         self.button_in_drawing = False
         self.button_out_drawing = False

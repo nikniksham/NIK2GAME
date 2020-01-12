@@ -128,7 +128,7 @@ class Game(Application):
         barr_back = scale_to(barr_back, (int(size_screen[1] * 0.33), 25))
         barr_top = load_image(REPOSITORY + 'barr_front.png', (255, 255, 255))
         barr_top = scale_to(barr_top, (int(size_screen[1] * 0.33), 25))
-        self.hp_line = ProgressBar(barr_top, barr_back, (-space, -space), red, red, 1)
+        self.hp_line = ProgressBar(barr_top, barr_back, (-space, -space), red, red, 0)
         self.game_screen = GameScreen(camera, scene, (0, 0), zoom=1, is_zooming=False, min_zoom=0.3, stock=False)
         self.add_widget(self.game_screen, 0)
         self.add_widget(self.hp_line)
@@ -173,6 +173,7 @@ class Game(Application):
 
     def update_interface(self):
         self.draw_frs.update_text(text=str(int(self.clock.get_fps())))
+        print(self.hero.heal_point / self.hero.max_heal_point)
         self.hp_line.update_bar(self.hero.heal_point / self.hero.max_heal_point)
         self.lkm_used = False
 

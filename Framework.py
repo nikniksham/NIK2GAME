@@ -152,7 +152,7 @@ class Application:
 
     def remove_event(self, event):
         if event in self.events:
-            self.add_event(event)
+            self.events.remove(event)
             return True
         return False
 
@@ -211,6 +211,7 @@ class Application:
     def run(self):
         # основной цикл
         while self.running:
+            print(self.running)
             # обробатываем события
             for event in pygame.event.get():
                 # событие закрытия
@@ -222,7 +223,7 @@ class Application:
                     self.set_screen((width, height), self.get_full_screen())
                     for widget in self.get_widgets():
                         widget.set_position(width, height)
-                if event.type == pygame.MOUSEMOTION and event.buttons[0] == 1:
+                if event.type == pygame.MOUSEMOTION:
                     self.set_active_widgets(event)
                 # событие нажатия клавиши мыши
                 if event.type == pygame.MOUSEBUTTONDOWN:
@@ -279,8 +280,10 @@ class Application:
             if good:
                 widget.active = False
             else:
+                print(widget.get_rect(), pos)
                 widget.set_active(pos)
-                good = True
+                if widget.get_active():
+                    good = True
 
     def mouse_key_up_event(self, event):
         # asd
@@ -302,15 +305,8 @@ class Application:
 
     # обрабатывает нажатие левой кнопкой мыши
     def on_click(self, event):
-        pos = event.pos
-        good = False
         for widget in self.get_widgets(reverse=True):
-            if good:
-                widget.active = False
-            else:
-                widget.set_active(pos)
-            if widget.get_active() and not good:
-                good = True
+            if widget.get_active():
                 # print(widget.rect)
                 widget.update(event)
 
@@ -350,7 +346,9 @@ class Application:
 
 
 class Widget:
-    def __init__(self, surfaces, coord, active=False, is_zooming=False, zoom=1, max_zoom=1, min_zoom=0.15, is_scrolling_x=False, is_scrolling_y=False, is_scroll_line_x=False, is_scroll_line_y=False, scroll_x=0, scroll_y=0, size=None, stock=True):
+    def __init__(self, surfaces, coord, active=False, is_zooming=False, zoom=1, max_zoom=1, min_zoom=0.15,
+                 is_scrolling_x=False, is_scrolling_y=False, is_scroll_line_x=False, is_scroll_line_y=False, scroll_x=0,
+                 scroll_y=0, size=None, stock=True):
         # размер экрана
         self.size = size
         # зум
@@ -533,18 +531,30 @@ class Widget:
         return self.rect
 
 
-
 class Audio: None
 
 
 class Button(Widget):
-    def __init__(self, surfaces, coord, function, active=False, is_zooming=False, zoom=1, max_zoom=1, min_zoom=0.15, is_scrolling_x=False, is_scrolling_y=False, is_scroll_line_x=False, is_scroll_line_y=False, scroll_x=0, scroll_y=0):
-        super().__init__(surfaces, coord, active, is_zooming, zoom, max_zoom, min_zoom, is_scrolling_x, is_scrolling_y, is_scroll_line_x, is_scroll_line_y, scroll_x, scroll_y)
+    def __init__(self, surfaces, coord, function, active=False, is_zooming=False, zoom=1, max_zoom=1, min_zoom=0.15,
+                 is_scrolling_x=False, is_scrolling_y=False, is_scroll_line_x=False, is_scroll_line_y=False, scroll_x=0,
+                 scroll_y=0):
+        super().__init__(surfaces, coord, active, is_zooming, zoom, max_zoom, min_zoom, is_scrolling_x, is_scrolling_y,
+                         is_scroll_line_x, is_scroll_line_y, scroll_x, scroll_y)
         self.pressed = False
         self.function = function
 
+    def set_active(self, pos):
+        self.active = self.rect.collidepoint(pos)
+
     def get_pressed(self):
         return self.pressed
+
+    def get_surface(self):
+        # print(self.active)
+        if self.active or self.pressed:
+            return self.images_orig[1]
+        else:
+            return self.images_orig[0]
 
     def update(self, event):
         if event.type == pygame.MOUSEBUTTONUP:
@@ -555,8 +565,11 @@ class Button(Widget):
 
 
 class AnimationWidgets(Widget):
-    def __init__(self, surfaces, coord, sec, active=False, is_zooming=False, zoom=1, max_zoom=1, min_zoom=0.15, is_scrolling_x=False, is_scrolling_y=False, is_scroll_line_x=False, is_scroll_line_y=False, scroll_x=0, scroll_y=0):
-        super().__init__(surfaces, coord, active, is_zooming, zoom, max_zoom, min_zoom, is_scrolling_x, is_scrolling_y, is_scroll_line_x, is_scroll_line_y, scroll_x, scroll_y)
+    def __init__(self, surfaces, coord, sec, active=False, is_zooming=False, zoom=1, max_zoom=1, min_zoom=0.15,
+                 is_scrolling_x=False, is_scrolling_y=False, is_scroll_line_x=False, is_scroll_line_y=False, scroll_x=0,
+                 scroll_y=0):
+        super().__init__(surfaces, coord, active, is_zooming, zoom, max_zoom, min_zoom, is_scrolling_x, is_scrolling_y,
+                         is_scroll_line_x, is_scroll_line_y, scroll_x, scroll_y)
         self.sec = sec
         self.tick = 0
         self.index = 0
@@ -605,16 +618,17 @@ class ProgressBar(AnimationWidgets):
                 color_1 = color_1 * (1 - (progress - 0.5) * 2)
             if progress < 0.5:
                 color_2 = color_2 * (progress * 2)
-            res_color.append(color_1 + color_2)
+            res_color.append(min(255, color_1 + color_2))
         return res_color
 
     def update_bar(self, percentage):
-        image = self.back_bar
+        image = self.back_bar.copy()
         if percentage > 1:
             percentage = 1
         self.percentage = percentage
         h = self.back_bar.get_height()
         w = self.back_bar.get_width() * self.percentage
+        print(w, self.back_bar.get_width())
         color = self.get_color()
         for x in range(int((w + 1))):
             pygame.draw.line(image, color, [x, 0], [x, h])
@@ -654,7 +668,8 @@ if __name__ == '__main__':
 
     test_app = Application((530, 500))
     widget2 = Button(['name2.png', 'name.png'], (10, 10), set_mouse_vizible, is_zooming=True)
-    widget1 = AnimationWidgets([load_image('1.png', (255, 255, 255)), load_image('2.png', (255, 255, 255)), load_image('3.png', (255, 255, 255))], (-120, -10), 0.65)
+    widget1 = AnimationWidgets([load_image('1.png', (255, 255, 255)), load_image('2.png', (255, 255, 255)),
+                                load_image('3.png', (255, 255, 255))], (-120, -10), 0.65)
     lu = Widget('lu.png', (10, 10))
     lb = Widget('lb.png', (10, -10))
     ru = Widget('ru.png', (-10, 10))

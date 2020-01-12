@@ -3,9 +3,9 @@ from player import Player
 from NPS_scripts import *
 from main_window import run
 from TestWeapon import *
+from menu import run_menu
 
 pygame.init()
-lol = pygame.display.set_mode((10, 10))
 # загружаем нужные переменные
 load_data()
 KILLED_ZOMBIE = 0
@@ -18,6 +18,8 @@ size = 30
 # 1 картинка 30 на 30 пикселей
 # размер каты в мегачанках
 chunk_count = ((0, 0), (1, 1))
+
+run_menu()
 
 # camera
 camera = Camera(size_screen, (0, 0, 0))
@@ -57,40 +59,42 @@ class Missions:
                                  'simple', 2000, [120, 150], 60, then.screen, hero, 7, 90)
         AR15 = WeaponObj('sprite/Weapon_sprites/AR15.png', [100, 100], 'AR15', 1, 'simple', 'simple', 2500, [800, 1000],
                          3, then.screen, hero, 3000, 180)
-        healpoint_NPS = Image('sprite/NPS_sprites/healpoint_nps.bmp')
         # bots = BotGroup('enemy', 'колючие платформы')
         # for x in range(300, 600, 60):
         #       print(bots.add_bot(EnemyBlock('sprite/blocks_sprites/spike.bmp', (x, 100), 1)))
 
-        site_1 = Site()
-        site = Site()
-        build = Build((10, 100), 'sprite/Building_sprites/Palatka/camp_1.png', then.scene)
-        site.add_object(build)
-        build = Build((110, 100), 'sprite/Building_sprites/Palatka/camp_1.png', then.scene)
         # then.scene.main_chunk.set_clear_chunk(build.rect)
-        site.add_object(build)
-        build = Build((210, 100), 'sprite/Building_sprites/Palatka/camp_1.png', then.scene)
-        site.add_object(build)
-        build = Build((310, 100), 'sprite/Building_sprites/Palatka/camp_1.png', then.scene)
-        site.add_object(build)
-        build = Build((10, 300), 'sprite/Building_sprites/Palatka/camp_1.png', then.scene)
-        site.add_object(build)
-        build = Build((110, 300), 'sprite/Building_sprites/Palatka/camp_1.png', then.scene)
-        then.scene.main_chunk.set_clear_chunk(build.rect)
-        site.add_object(build)
-        build = Build((210, 300), 'sprite/Building_sprites/Palatka/camp_1.png', then.scene)
-        site.add_object(build)
-        build = Build((310, 300), 'sprite/Building_sprites/Palatka/camp_1.png', then.scene)
-        site.add_object(build)
+
         # print(len(bots.get_objects()))
-        build = Build((10, 100), 'sprite\\Building_sprites\\House.png', then.scene,
+        main_site = Site()
+        build = Build(((3840, 3800)), 'sprite\\Building_sprites\\House.png', then.scene,
                       'sprite/Building_sprites/House_in.png', Rect((25, 120), (35, 70)))
-        bonfire = PassiveAnimationBuild('sprite/blocks_sprites/bonfire/', 7, (10, 300), scene)
-        chest = Chest('sprite/Interactive_objects/chest.bmp', (70, 300), scene, [AR15, Desert_eagle])
-        site_1.add_object(build)
-        site_1.add_object(bonfire)
-        site_1.add_object(chest)
-        print(then.scene.add_site(site_1))
+        chest_1 = Chest('sprite/Interactive_objects/chest.bmp', ((3850, 3830)), scene, [Desert_eagle])
+        main_site.add_object(build)
+        main_site.add_object(chest_1)
+
+        base = Site()
+        main_home = Build((6840, 3900), 'sprite\\Building_sprites\\army tent.png', scene, 'sprite\\Building_sprites\\army_tent_in.png', Rect((35, 85), (35, 70)))
+        base.add_object(main_home)
+        chest_2 = Chest('sprite/Interactive_objects/chest.bmp', ((6850, 3930)), scene, [AR15])
+        base.add_object(chest_2)
+        bonfire = PassiveAnimationBuild('sprite/blocks_sprites/bonfire/', 7, (6855, 4060), scene)
+        base.add_object(bonfire)
+        palatka_1 = Build((6600, 3930), 'sprite/Building_sprites/Palatka/camp_1.png', scene)
+        base.add_object(palatka_1)
+        palatka_2 = Build((7100, 3880), 'sprite/Building_sprites/Palatka/camp_1.png', scene)
+        base.add_object(palatka_2)
+        palatka_3 = Build((6600, 4120), 'sprite/Building_sprites/Palatka/camp_1.png', scene)
+        base.add_object(palatka_3)
+        palatka_4 = Build((7100, 4080), 'sprite/Building_sprites/Palatka/camp_1.png', scene)
+        base.add_object(palatka_4)
+        palatka_5 = Build((6840, 4200), 'sprite/Building_sprites/Palatka/camp_1.png', scene)
+        base.add_object(palatka_5)
+        rect_2 = Rect((6600, 3880), (500, 400))
+        then.scene.main_chunk.set_clear_chunk(build.get_rect())
+        then.scene.main_chunk.set_clear_chunk(rect_2)
+        print(then.scene.add_site(main_site))
+        print(then.scene.add_site(base))
 
     def get_group(self):
         return zombie_group
