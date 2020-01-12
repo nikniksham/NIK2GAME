@@ -56,7 +56,7 @@ class Missions:
 
     def mission_1(self, then):
         Desert_eagle = WeaponObj('sprite/Weapon_sprites/Desert Eagle.bmp', (360, 360), 'DesertEagle', 1, 'simple',
-                                 'simple', 2000, [1200, 1500], 30, then.screen, hero, 7, 90)
+                                 'simple', 2000, [1200, 1500], 60, then.screen, hero, 7, 90)
         AR15 = WeaponObj('sprite/Weapon_sprites/AR15.png', [100, 100], 'AR15', 1, 'simple', 'simple', 2500, [800, 1000],
                          3, then.screen, hero, 3000, 180)
         # bots = BotGroup('enemy', 'колючие платформы')
@@ -74,7 +74,8 @@ class Missions:
         main_site.add_object(chest_1)
 
         base = Site()
-        main_home = Build((6840, 3900), 'sprite\\Building_sprites\\army tent.png', scene, 'sprite\\Building_sprites\\army_tent_in.png', Rect((35, 85), (35, 70)))
+        main_home = Build((6840, 3900), 'sprite\\Building_sprites\\army tent.png', scene,
+                          'sprite\\Building_sprites\\army_tent_in.png', Rect((35, 85), (35, 70)))
         base.add_object(main_home)
         chest_2 = Chest('sprite/Interactive_objects/chest.bmp', ((6850, 3930)), scene, [AR15])
         base.add_object(chest_2)
