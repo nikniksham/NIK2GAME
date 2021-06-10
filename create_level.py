@@ -2,7 +2,6 @@ from Chunk import *
 from random import randrange, random
 from pygame import Rect
 from Framework import Application, Widget, AnimationWidgets, load_image, scale_to, Text, ProgressBar
-from win32api import GetSystemMetrics
 
 height_barr = 35
 offset_from_the_sides = 110
@@ -10,7 +9,7 @@ from_bottom = -12
 WHITE = (255, 255, 255)
 REPOSITORY = 'sprite\\User_Interface\\'
 
-size_screen = (GetSystemMetrics(0), GetSystemMetrics(1))
+size_screen = (1920, 1080)
 
 
 class Wall:
@@ -121,16 +120,16 @@ class Create(Application):
 
 def make_level(slow, chunk_count, map_slow):
     image = load_image(REPOSITORY + 'fon 1.png')
-    image = scale_to(image, (GetSystemMetrics(0), GetSystemMetrics(1)))
+    image = scale_to(image, (size_screen[0], size_screen[1]))
     bg = Widget(image, (0, 0), is_zooming=False)
 
     barr_top = load_image(REPOSITORY + 'barr_front.png', (255, 255, 255))
-    barr_top = scale_to(barr_top, (GetSystemMetrics(0) - 2 * offset_from_the_sides, height_barr))
+    barr_top = scale_to(barr_top, (size_screen[0] - 2 * offset_from_the_sides, height_barr))
     barr_back = load_image(REPOSITORY + 'barr back.png', -1)
-    barr_back = scale_to(barr_back, (GetSystemMetrics(0) - 2 * offset_from_the_sides, height_barr))
+    barr_back = scale_to(barr_back, (size_screen[0] - 2 * offset_from_the_sides, height_barr))
     barr = ProgressBar(barr_top, barr_back, (offset_from_the_sides, from_bottom), from_color=(255, 0, 0), to_color=(0, 255, 0))
 
-    text_prozent = Text('', height_barr, (GetSystemMetrics(0) - offset_from_the_sides + 5, from_bottom + 2), color=(100, 255, 100))
+    text_prozent = Text('', height_barr, (size_screen[0] - offset_from_the_sides + 5, from_bottom + 2), color=(100, 255, 100))
     barr.add_display(text_prozent)
 
     animation = AnimationWidgets([load_image(REPOSITORY + '0.png', -1), load_image(REPOSITORY + '1.png', -1), load_image(REPOSITORY + '2.png', -1), load_image(REPOSITORY + '3.png', -1)], (10, from_bottom), 0.65)
@@ -219,17 +218,17 @@ class Load(Application):
 
 def load_level(file, slow, map_slow):
     image = load_image(REPOSITORY + 'fon 1.png')
-    image = scale_to(image, (GetSystemMetrics(0), GetSystemMetrics(1)))
+    image = scale_to(image, (size_screen[0], size_screen[1]))
     bg = Widget(image, (0, 0), is_zooming=False)
 
     barr_top = load_image(REPOSITORY + 'barr_front.png', (255, 255, 255))
-    barr_top = scale_to(barr_top, (GetSystemMetrics(0) - 2 * offset_from_the_sides, height_barr))
+    barr_top = scale_to(barr_top, (size_screen[0] - 2 * offset_from_the_sides, height_barr))
     barr_back = load_image(REPOSITORY + 'barr back.png', -1)
-    barr_back = scale_to(barr_back, (GetSystemMetrics(0) - 2 * offset_from_the_sides, height_barr))
+    barr_back = scale_to(barr_back, (size_screen[0] - 2 * offset_from_the_sides, height_barr))
     barr = ProgressBar(barr_top, barr_back, (offset_from_the_sides, from_bottom), from_color=(255, 0, 0),
                        to_color=(0, 255, 0))
 
-    text_prozent = Text('', height_barr, (GetSystemMetrics(0) - offset_from_the_sides + 5, from_bottom + 2),
+    text_prozent = Text('', height_barr, (size_screen[0] - offset_from_the_sides + 5, from_bottom + 2),
                         color=(100, 255, 100))
     barr.add_display(text_prozent)
 

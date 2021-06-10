@@ -183,7 +183,6 @@ class Animation(Image):
         files = list(os.walk(way))[0][-1]
         self.images = []
         for elem in files:
-            print(elem)
             self.images.append(Image(way + elem, transpote_color=color_key).get_image())
         super().__init__(self.images[0], transpote_color=color_key, coord=coord)
         self.frame = 0
@@ -193,7 +192,6 @@ class Animation(Image):
     def update(self, *args):
         self.to_next_frame += 1
         if self.to_next_frame == self.speed:
-            print(self.frame)
             self.frame += 1
             if self.frame >= len(self.images) - 1:
                 self.frame = 0
@@ -219,6 +217,7 @@ class Animation(Image):
 
 class Object(Image):
     def __init__(self, image, coord, transpote_color=(255, 255, 255)):
+        pygame.sprite.Sprite.__init__(self)
         if type(image) == str:
             super().__init__(image, transpote_color, coord)
         else:
@@ -1442,6 +1441,8 @@ class AnimationObject(MovingObject):
         self.speed_boost = False
         # downloading sprites
         self.way_to_image = way_to_image
+        for i in range(1, 7):
+            self.die_frames.append(Image(f'sprite/Enemy_sprites/die/Zombie/Zombie_die_{i}.png').get_image())
         types = ['forward', 'back', 'left', 'right']
         for elem in types:
             for i in range(1, len(os.listdir(path=f'sprite/{way_to_image}/{elem}/{way_name}')) + 1):
@@ -1501,12 +1502,10 @@ class AnimationObject(MovingObject):
             # переключиться на следующий кадр
             self.next_frame()
         else:
-            if self.is_type('MainHero'):
-                self.die_frames.get_image()
-                self.die_frames.update()
-            else:
-                self.image = self.die_frames
-                self.next_die_frame()
+            if len(self.die_frames) <= self.count_die_frames:
+                self.count_die_frames = len(self.die_frames) - 1
+            self.image = self.die_frames[self.count_die_frames]
+            self.next_die_frame()
 
     def resurrection(self):
         self.die_f = False
@@ -1604,6 +1603,7 @@ class EnemyBlock(Object):
 
 class ImageButton(Object):
     def __init__(self, images, coord, action):
+        pygame.sprite.Sprite.__init__(self)
         super().__init__(images, coord)
         self.add_type('Static')
         self.coord = coord

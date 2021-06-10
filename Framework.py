@@ -15,7 +15,7 @@ def load_image(name, colorkey=None):
         print('Cannot load image:', name)
         raise SystemExit(message)
     if colorkey is not None:
-        if colorkey is -1:
+        if colorkey == -1:
             colorkey = image.get_at((0, 0))
         image.set_colorkey(colorkey)
     image = image.convert_alpha()
@@ -220,11 +220,6 @@ class Application:
                 if event.type == pygame.QUIT:
                     self.running = False
                     return self.quit()
-                if event.type == pygame.VIDEORESIZE:
-                    width, height = event.w, event.h
-                    self.set_screen((width, height), self.get_full_screen())
-                    for widget in self.get_widgets():
-                        widget.set_position(width, height)
                 if event.type == pygame.MOUSEMOTION:
                     self.set_active_widgets(event)
                 # событие нажатия клавиши мыши

@@ -24,7 +24,7 @@ chunk_count = ((0, 0), (2, 1))
 run_menu()
 
 # camera
-camera = Camera(size_screen, (0, 0, 0))
+camera = Camera([1920, 1080], (0, 0, 0))
 
 # словарь картинок объектов мира
 slow = {'bn': [Image('sprite/blocks_sprites/back_1.bmp').get_image(), Image('sprite/blocks_sprites/block_3.bmp').get_image(),

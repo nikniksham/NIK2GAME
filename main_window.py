@@ -1,5 +1,4 @@
 from Framework import Application, Widget, load_image, scale_to, Text, create_text, ProgressBar, Button
-from win32api import GetSystemMetrics
 import pygame
 from pygame import Surface
 from MainClasss import Timer, get_gipotinuza
@@ -215,7 +214,7 @@ class Game(Application):
 
 
 def run(camera, scene, missions):
-    size_screen = (GetSystemMetrics(0), GetSystemMetrics(1))
+    size_screen = (1920, 1080)
     game = Game(missions, size_screen, camera, scene, full_screen=True)
     REPOSITORY = 'sprite\\User_Interface\\'
     space = 10

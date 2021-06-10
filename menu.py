@@ -1,11 +1,10 @@
 from Framework import Application, Widget, load_image, Button, scale_to
-from win32api import GetSystemMetrics
 
 
 def run_menu():
     REPOSITORY = 'sprite/User_Interface/'
     spase = 10
-    size_screen = (GetSystemMetrics(0), GetSystemMetrics(1))
+    size_screen = [1920, 1080]
     app = Application(size_screen, fill_color=(255, 255, 255), full_screen=True)
     fon = scale_to(load_image(REPOSITORY + 'fon 1.png'), size_screen)
     button_off_image = load_image(REPOSITORY + 'Game.png', -1)
