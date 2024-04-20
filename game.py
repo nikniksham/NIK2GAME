@@ -1,3 +1,5 @@
+import pygame as pygame
+
 from create_level import *
 from player import Player
 from NPS_scripts import *
